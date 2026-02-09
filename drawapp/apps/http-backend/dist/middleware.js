@@ -7,18 +7,23 @@ exports.middleware = middleware;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = require("@repo/backend-common/config");
 function middleware(req, res, next) {
-    const token = req.headers['authorization'] || "";
-    if (!config_1.JWT_SECRET) {
-        throw new Error('JWT_SECRET is not defined');
+    try {
+        const token = req.headers['authorization'] || "";
+        if (!config_1.JWT_SECRET) {
+            throw new Error('JWT_SECRET is not defined');
+        }
+        const decoded = jsonwebtoken_1.default.verify(token, config_1.JWT_SECRET);
+        if (decoded) {
+            // TO DO: Add type for req.userId
+            req.userId = decoded.userId;
+            next();
+        }
+        else {
+            res.status(401).send('Unauthorized');
+        }
     }
-    const decoded = jsonwebtoken_1.default.verify(token, config_1.JWT_SECRET);
-    if (decoded) {
-        // @ts-ignore
-        // TO DO: Add type for req.userId
-        req.userId = decoded.userId;
-        next();
-    }
-    else {
+    catch (err) {
+        console.error('Error in middleware:', err);
         res.status(401).send('Unauthorized');
     }
 }

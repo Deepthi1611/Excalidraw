@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { JWT_SECRET } from "@repo/backend-common/config";
 
 export function middleware(req: Request, res: Response, next: NextFunction) {
+  try {
   const token = req.headers['authorization'] || "";
 
   if(!JWT_SECRET) {
@@ -12,11 +13,14 @@ export function middleware(req: Request, res: Response, next: NextFunction) {
   const decoded = jwt.verify(token, JWT_SECRET);
 
   if(decoded){
-    // @ts-ignore
     // TO DO: Add type for req.userId
     req.userId = (decoded as JwtPayload).userId;
     next();
   } else {
     res.status(401).send('Unauthorized');
   }
+} catch (err) {
+  console.error('Error in middleware:', err);
+  res.status(401).send('Unauthorized');
+}
 }
