@@ -20,24 +20,30 @@ app.post('/signup', (req, res) => {
     }
 });
 app.post('/signin', (req, res) => {
-    const data = types_1.signInSchema.safeParse(req.body);
-    if (!data.success) {
-        res.status(400).json({ error: data.error });
-    }
-    const userId = 1;
-    if (!config_1.JWT_SECRET) {
-        throw new Error('JWT_SECRET is not defined');
-    }
-    console.log(config_1.JWT_SECRET);
-    const token = jsonwebtoken_1.default.sign({ userId }, config_1.JWT_SECRET, { expiresIn: '3h' }, (err, token) => {
-        if (err) {
-            res.status(500).send('Error signing token');
+    try {
+        const data = types_1.signInSchema.safeParse(req.body);
+        if (!data.success) {
+            res.status(400).json({ error: data.error });
         }
-        else {
-            res.json({ token });
+        const userId = "1";
+        if (!config_1.JWT_SECRET) {
+            throw new Error('JWT_SECRET is not defined');
         }
-    });
-    res.json({ token });
+        console.log(config_1.JWT_SECRET);
+        const token = jsonwebtoken_1.default.sign({ userId }, config_1.JWT_SECRET, { expiresIn: '3h' }, (err, token) => {
+            if (err) {
+                res.status(500).send('Error signing token');
+            }
+            else {
+                res.json({ token });
+            }
+        });
+        res.json({ token });
+    }
+    catch (err) {
+        console.error('Error in /signin route:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 app.post('/room', middleware_1.middleware, (req, res) => {
     const data = types_1.createRoomSchema.safeParse(req.body);

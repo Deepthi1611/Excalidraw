@@ -19,11 +19,12 @@ app.post('/signup', (req, res) => {
 });
 
 app.post('/signin', (req, res) => {
+  try {
   const data = signInSchema.safeParse(req.body);
   if (!data.success) {
     res.status(400).json({ error: data.error });
   }
-  const userId = 1;
+  const userId = "1";
   if(!JWT_SECRET) {
     throw new Error('JWT_SECRET is not defined');
   }
@@ -36,6 +37,10 @@ app.post('/signin', (req, res) => {
     }
   });
   res.json({ token });
+  } catch (err) {
+    console.error('Error in /signin route:', err);
+    res.status(500).send('Internal Server Error'); 
+  }
 });
 
 app.post('/room', middleware, (req, res) => {
