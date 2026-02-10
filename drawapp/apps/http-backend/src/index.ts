@@ -8,7 +8,7 @@ const app = express();
 const port = 3000;
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+  console.log(`app listening at http://localhost:${port}`);
 });
 
 app.post('/signup', (req, res) => {
@@ -38,7 +38,7 @@ app.post('/signin', (req, res) => {
   });
   res.json({ token });
   } catch (err) {
-    console.error('Error in /signin route:', err);
+    console.error('Error in signin route:', err);
     res.status(500).send('Internal Server Error'); 
   }
 });

@@ -8,7 +8,7 @@ const wss = new WebSocketServer({ port: 8080 });
 wss.on('connection', function connection(ws: WebSocket, req: Request) {
   try {
   console.log('A new client connected!');
-  const url = req.url;
+  const url = req.url; // contains what url we are trying to connect to, and also the query params
   if(!url){
     return;
   }
