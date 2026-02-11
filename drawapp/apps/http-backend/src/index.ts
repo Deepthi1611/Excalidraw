@@ -19,6 +19,7 @@ app.post('/signup', async (req, res) => {
   const parsedData = createUserSchema.safeParse(req.body);
   
   if (!parsedData.success) {
+    console.log('Validation error:', parsedData.error);
     return res.status(400).json({ error: parsedData.error });
   }
 
