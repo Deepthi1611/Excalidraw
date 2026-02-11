@@ -8,15 +8,35 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const middleware_1 = require("./middleware");
 const config_1 = require("@repo/backend-common/config");
 const types_1 = require("@repo/common/types");
+// the name of the file should be same as the name we are exporting it in the package.json of the db package
+const client_1 = require("@repo/db/client");
 const app = (0, express_1.default)();
 const port = 3000;
+app.use(express_1.default.json());
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`);
+    console.log(`app listening at http://localhost:${port}`);
 });
-app.post('/signup', (req, res) => {
-    const data = types_1.createUserSchema.safeParse(req.body);
-    if (!data.success) {
-        res.status(400).json({ error: data.error });
+app.post('/signup', async (req, res) => {
+    console.log('Received signup request with body:', req.body);
+    const parsedData = types_1.createUserSchema.safeParse(req.body);
+    if (!parsedData.success) {
+        console.log('Validation error:', parsedData.error);
+        return res.status(400).json({ error: parsedData.error });
+    }
+    try {
+        await client_1.prisma.user.create({
+            data: {
+                email: parsedData.data.email,
+                name: parsedData.data.name,
+                password: parsedData.data.password,
+                photo: parsedData.data.photo,
+            },
+        });
+        return res.status(201).json({ message: 'User created' });
+    }
+    catch (err) {
+        console.error('Error in signup route:', err);
+        return res.status(500).send('Internal Server Error');
     }
 });
 app.post('/signin', (req, res) => {
@@ -41,7 +61,7 @@ app.post('/signin', (req, res) => {
         res.json({ token });
     }
     catch (err) {
-        console.error('Error in /signin route:', err);
+        console.error('Error in signin route:', err);
         res.status(500).send('Internal Server Error');
     }
 });

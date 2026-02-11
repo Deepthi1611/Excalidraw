@@ -16,6 +16,7 @@ app.listen(port, () => {
 });
 
 app.post('/signup', async (req, res) => {
+  console.log('Received signup request with body:', req.body);
   const parsedData = createUserSchema.safeParse(req.body);
   
   if (!parsedData.success) {

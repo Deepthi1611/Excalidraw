@@ -13,7 +13,7 @@
     "@types/node": "^22.15.3"
   },
   "exports": {
-    "./client": "./src/index.js"
+    "./client": "./dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -21,8 +21,9 @@
   "description": "",
   "dependencies": {
     "@prisma/adapter-pg": "^7.3.0",
+    "@prisma/client": "^7.3.0",
+    "dotenv": "^17.2.4",
     "pg": "^8.18.0",
-    "prisma": "^7.3.0",
-    "dotenv": "^17.2.4"
+    "prisma": "^7.3.0"
   }
 }
