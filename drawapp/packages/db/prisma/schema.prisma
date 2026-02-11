@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// user can create multiple rooms, but a room can only have one admin
+// every user can send multiple chat messages, but a chat message can only be sent by one user
+model User {
+  id String @id @default(uuid())
+  email String @unique
+  name String 
+  password String
+  photo String
+  rooms Room[]
+  chats Chat[]
+}
+
+// every room can have multiple chat messages, but a chat message can only belong to one room
+model Room {
+  id Int @id @default(autoincrement())
+  slug String @unique
+  createdAt DateTime @default(now())
+  adminId String
+  admin User @relation(fields: [adminId], references: [id])
+  chats Chat[]
+}
+
+// every chat message is sent by a user in a room
+model Chat {
+  id Int @id @default(autoincrement())
+  message String
+  userId String
+  roomId Int
+  room Room @relation(fields: [roomId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
