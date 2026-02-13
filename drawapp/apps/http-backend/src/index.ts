@@ -26,8 +26,13 @@ function loadDbEnvFile(): void {
       continue;
     }
     const key = trimmed.slice(0, eqIndex).trim();
-    const value = trimmed.slice(eqIndex + 1).trim();
-    if (key && process.env[key] === undefined) {
+    const rawValue = trimmed.slice(eqIndex + 1).trim();
+    const value =
+      (rawValue.startsWith('"') && rawValue.endsWith('"')) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'"))
+        ? rawValue.slice(1, -1)
+        : rawValue;
+    if (key) {
       process.env[key] = value;
     }
   }
