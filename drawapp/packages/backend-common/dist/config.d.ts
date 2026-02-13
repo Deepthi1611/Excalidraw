@@ -1,2 +1,2 @@
-export declare const JWT_SECRET: string | undefined;
+export declare function getJwtSecret(): string | undefined;
 //# sourceMappingURL=config.d.ts.map
