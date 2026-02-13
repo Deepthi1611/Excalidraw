@@ -1,7 +1,7 @@
 const {WebSocketServer, WebSocket} = require('ws');
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request } from "express";
-import { JWT_SECRET } from "@repo/backend-common/config"
+import { getJwtSecret } from "@repo/backend-common/config";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -16,11 +16,9 @@ wss.on('connection', function connection(ws: WebSocket, req: Request) {
   const token = queryParams.get('token') || "";
   console.log('Token:', token);
 
-  if(!JWT_SECRET) {
-    throw new Error('JWT_SECRET is not defined');
-  }
-
-  const decoded = jwt.verify(token, JWT_SECRET);
+  const jwtSecret = getJwtSecret();
+  if (!jwtSecret) throw new Error("JWT_SECRET is not defined");
+  const decoded = jwt.verify(token, jwtSecret);
 
   if(!decoded || !(decoded as JwtPayload).userId) { 
     ws.close(1008, 'Invalid token');

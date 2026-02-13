@@ -1,4 +1,4 @@
-import z from "zod";
+import z, { email } from "zod";
 
 export const createUserSchema = z.object({
   email: z.string().email(),
@@ -8,7 +8,7 @@ export const createUserSchema = z.object({
 });
 
 export const signInSchema = z.object({
-  name: z.string(),
+  email: z.string().email(),
   password: z.string(),
 });
 
