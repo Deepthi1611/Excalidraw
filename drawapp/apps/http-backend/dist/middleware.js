@@ -9,10 +9,10 @@ const config_1 = require("@repo/backend-common/config");
 function middleware(req, res, next) {
     try {
         const token = req.headers['authorization'] || "";
-        if (!config_1.JWT_SECRET) {
-            throw new Error('JWT_SECRET is not defined');
-        }
-        const decoded = jsonwebtoken_1.default.verify(token, config_1.JWT_SECRET);
+        const jwtSecret = (0, config_1.getJwtSecret)();
+        if (!jwtSecret)
+            throw new Error("JWT_SECRET is not defined");
+        const decoded = jsonwebtoken_1.default.verify(token, jwtSecret);
         if (decoded) {
             // TO DO: Add type for req.userId
             req.userId = decoded.userId;
