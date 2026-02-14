@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket as WsWebSocket, RawData } from "ws";
 import type { IncomingMessage } from "node:http";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { getJwtSecret } from "@repo/backend-common/config";
+import { prisma } from "@repo/db/client";
 
 // Load shared backend env values so JWT verification works in this process too.
 function loadDbEnvFile(): void {
@@ -106,7 +107,7 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
     }
     userSockets.add(ws);
 
-    ws.on("message", (data: RawData) => {
+    ws.on("message", async(data: RawData) => {
       let parsedData: ClientMessage;
       try {
         parsedData = JSON.parse(data.toString()) as ClientMessage;
@@ -147,6 +148,14 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
 
       if (parsedData.type === "chat") {
         const { roomId, message } = parsedData;
+
+        await prisma.chat.create({
+          data: {
+            roomId: Number(roomId),
+            userId: currentConn.userId,
+            message,
+          }
+        })
 
         // Sender must be a member of the room before sending.
         if (!currentConn.rooms.has(roomId)) {
