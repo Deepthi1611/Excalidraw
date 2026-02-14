@@ -5,6 +5,7 @@ import type { IncomingMessage } from "node:http";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { getJwtSecret } from "@repo/backend-common/config";
 
+// Load shared backend env values so JWT verification works in this process too.
 function loadDbEnvFile(): void {
   const envPath = path.resolve(__dirname, "../../../packages/db/.env");
   if (!fs.existsSync(envPath)) {
@@ -14,23 +15,21 @@ function loadDbEnvFile(): void {
   const raw = fs.readFileSync(envPath, "utf8");
   for (const line of raw.split("\n")) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) {
-      continue;
-    }
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
     const eqIndex = trimmed.indexOf("=");
-    if (eqIndex === -1) {
-      continue;
-    }
+    if (eqIndex === -1) continue;
+
     const key = trimmed.slice(0, eqIndex).trim();
     const rawValue = trimmed.slice(eqIndex + 1).trim();
+    // Support both quoted and unquoted .env values.
     const value =
       (rawValue.startsWith('"') && rawValue.endsWith('"')) ||
       (rawValue.startsWith("'") && rawValue.endsWith("'"))
         ? rawValue.slice(1, -1)
         : rawValue;
-    if (key) {
-      process.env[key] = value;
-    }
+
+    if (key) process.env[key] = value;
   }
 }
 
@@ -38,89 +37,171 @@ loadDbEnvFile();
 
 const wss = new WebSocketServer({ port: 8080 });
 
-function checkUser(token: string): (string | null) {
+function formatError(err: unknown): string {
+  if (err instanceof Error) {
+    return `${err.name}: ${err.message}`;
+  }
+  return String(err);
+}
+
+function checkUser(token: string): string | null {
   try {
     const jwtSecret = getJwtSecret();
     if (!jwtSecret) throw new Error("JWT_SECRET is not defined");
-    const decoded = jwt.verify(token, jwtSecret);
-    if (decoded && (decoded as JwtPayload).userId) {
-      return (decoded as JwtPayload).userId;
+
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    if (decoded?.userId && typeof decoded.userId === "string") {
+      return decoded.userId;
     }
     return null;
   } catch (err) {
-    console.error('Error verifying token:', err);
+    console.error(`Error verifying token: ${formatError(err)}`);
     return null;
   }
 }
 
-interface User {
+interface Connection {
   userId: string;
-  rooms: string[];
   ws: WsWebSocket;
+  // Rooms this specific socket/device has joined.
+  rooms: Set<string>;
 }
 
-// In-memory store for connected users - each user object has user id, rooms they are in, and their WebSocket connection
-const users: User[] = [];
+type ClientMessage =
+  | { type: "join_room"; roomId: string }
+  | { type: "leave_room"; roomId: string }
+  | { type: "chat"; roomId: string; message: string };
 
-wss.on('connection', function connection(ws: WsWebSocket, req: IncomingMessage) {
+const connectionsBySocket = new Map<WsWebSocket, Connection>();
+// Helps track all active sockets for a user (same user on multiple devices/tabs).
+const socketsByUser = new Map<string, Set<WsWebSocket>>();
+// Fast room broadcast lookup: room -> sockets currently inside the room.
+const membersByRoom = new Map<string, Set<WsWebSocket>>();
+
+wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
   try {
-  console.log('A new client connected!');
-  const url = req.url; // contains what url we are trying to connect to, and also the query params
-  if(!url){
-    return;
-  }
-  const queryParams = new URLSearchParams(url.split('?')[1]);
-  const token = queryParams.get('token') || "";
-  console.log('Token:', token);
+    const url = req.url;
+    if (!url) {
+      ws.close(1008, "Missing URL");
+      return;
+    }
 
-  const userId = checkUser(token);
+    const queryParams = new URLSearchParams(url.split("?")[1] ?? "");
+    const token = queryParams.get("token") ?? "";
+    const userId = checkUser(token);
 
-  if (!userId) {
-    console.log('Unauthorized client attempted to connect');
-    ws.close(1008, 'Unauthorized');
-    return;
-  }
+    if (!userId) {
+      ws.close(1008, "Unauthorized");
+      return;
+    }
 
-  // add user to the global users array with their userId, an empty array for rooms, and their WebSocket connection
-  users.push({ userId, rooms: [], ws });
+    // One connection object per socket. This avoids collisions between same-user devices.
+    const conn: Connection = { userId, ws, rooms: new Set<string>() };
+    connectionsBySocket.set(ws, conn);
 
-  ws.on('message', function message(data: RawData) {
-    const parsedData = JSON.parse(data.toString());
-    if(parsedData.type === 'join_room') {
-      const { roomId } = parsedData;
-      const user = users.find(u => u.userId === userId);
-      console.log(user);
-      console.log(users);
-      // add the room to the user's rooms array if they are not already in it
-      if (user && roomId && !user.rooms.includes(roomId)) {
-        user.rooms.push(roomId);
-        console.log(`User ${userId} joined room ${roomId}`);
-        console.log(users);
+    let userSockets = socketsByUser.get(userId);
+    if (!userSockets) {
+      userSockets = new Set<WsWebSocket>();
+      socketsByUser.set(userId, userSockets);
+    }
+    userSockets.add(ws);
+
+    ws.on("message", (data: RawData) => {
+      let parsedData: ClientMessage;
+      try {
+        parsedData = JSON.parse(data.toString()) as ClientMessage;
+      } catch {
+        ws.send(JSON.stringify({ type: "error", message: "Invalid JSON" }));
+        return;
       }
-    }
-    if(parsedData.type === 'leave_room') {
-      const { roomId } = parsedData;
-      const user = users.find(u => u.userId === userId);
-      // remove the room from the user's rooms array
-      if (user) {
-        user.rooms = user.rooms.filter(r => r !== roomId);
-        console.log(`User ${userId} left room ${roomId}`);
-      } else return;
-    } 
-    if(parsedData.type === 'chat') {
-      const { roomId, message } = parsedData;
-      // broadcast the message to all users in the same room
-      users.forEach(u => {
-        console.log(u.userId, u.rooms);
-        if (u.rooms.includes(roomId)) {
-          u.ws.send(JSON.stringify({ type: 'chat', userId, message }));
-        }
-      });
-    }
-  });
 
-} catch (err) {
-  console.error('Error during WebSocket connection:', err);
-  ws.close(1011, 'Internal Server Error');
-}
+      const currentConn = connectionsBySocket.get(ws);
+      if (!currentConn) return;
+
+      if (parsedData.type === "join_room") {
+        const { roomId } = parsedData;
+        // Join only this socket/device to the room.
+        currentConn.rooms.add(roomId);
+
+        let roomMembers = membersByRoom.get(roomId);
+        if (!roomMembers) {
+          roomMembers = new Set<WsWebSocket>();
+          membersByRoom.set(roomId, roomMembers);
+        }
+        roomMembers.add(ws);
+        return;
+      }
+
+      if (parsedData.type === "leave_room") {
+        const { roomId } = parsedData;
+        // Leave only this socket/device from the room.
+        currentConn.rooms.delete(roomId);
+
+        const roomMembers = membersByRoom.get(roomId);
+        if (roomMembers) {
+          roomMembers.delete(ws);
+          if (roomMembers.size === 0) membersByRoom.delete(roomId);
+        }
+        return;
+      }
+
+      if (parsedData.type === "chat") {
+        const { roomId, message } = parsedData;
+
+        // Sender must be a member of the room before sending.
+        if (!currentConn.rooms.has(roomId)) {
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: "Join room before sending messages",
+            }),
+          );
+          return;
+        }
+
+        const roomMembers = membersByRoom.get(roomId);
+        if (!roomMembers) return;
+
+        const payload = JSON.stringify({
+          type: "chat",
+          roomId,
+          userId: currentConn.userId,
+          message,
+        });
+
+        // Broadcast to every socket in the room, including other devices of same user.
+        for (const memberSocket of roomMembers) {
+          if (memberSocket.readyState === memberSocket.OPEN) {
+            memberSocket.send(payload);
+          }
+        }
+      }
+    });
+
+    ws.on("close", () => {
+      const currentConn = connectionsBySocket.get(ws);
+      if (!currentConn) return;
+
+      // Remove this socket from all rooms it had joined.
+      for (const roomId of currentConn.rooms) {
+        const roomMembers = membersByRoom.get(roomId);
+        if (roomMembers) {
+          roomMembers.delete(ws);
+          if (roomMembers.size === 0) membersByRoom.delete(roomId);
+        }
+      }
+
+      const userSockets = socketsByUser.get(currentConn.userId);
+      if (userSockets) {
+        userSockets.delete(ws);
+        if (userSockets.size === 0) socketsByUser.delete(currentConn.userId);
+      }
+
+      // Finally remove socket -> connection mapping.
+      connectionsBySocket.delete(ws);
+    });
+  } catch (err) {
+    console.error(`Error during WebSocket connection: ${formatError(err)}`);
+    ws.close(1011, "Internal Server Error");
+  }
 });
