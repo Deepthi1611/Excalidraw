@@ -8,6 +8,7 @@ const node_path_1 = __importDefault(require("node:path"));
 const ws_1 = require("ws");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = require("@repo/backend-common/config");
+const client_1 = require("@repo/db/client");
 // Load shared backend env values so JWT verification works in this process too.
 function loadDbEnvFile() {
     const envPath = node_path_1.default.resolve(__dirname, "../../../packages/db/.env");
@@ -85,7 +86,7 @@ wss.on("connection", (ws, req) => {
             socketsByUser.set(userId, userSockets);
         }
         userSockets.add(ws);
-        ws.on("message", (data) => {
+        ws.on("message", async (data) => {
             let parsedData;
             try {
                 parsedData = JSON.parse(data.toString());
@@ -123,6 +124,13 @@ wss.on("connection", (ws, req) => {
             }
             if (parsedData.type === "chat") {
                 const { roomId, message } = parsedData;
+                await client_1.prisma.chat.create({
+                    data: {
+                        roomId: Number(roomId),
+                        userId: currentConn.userId,
+                        message,
+                    }
+                });
                 // Sender must be a member of the room before sending.
                 if (!currentConn.rooms.has(roomId)) {
                     ws.send(JSON.stringify({
