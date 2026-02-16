@@ -1,0 +1,80 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 10% 15%, rgba(252, 211, 177, 0.42), transparent 40%),
+    radial-gradient(circle at 88% 82%, rgba(191, 219, 254, 0.45), transparent 38%),
+    linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+}
+
+.card {
+  width: min(440px, 100%);
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+}
+
+.title {
+  color: #0f172a;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin-top: 6px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.form {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.input {
+  height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.input:focus-visible {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+
+.button {
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: #1d4ed8;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.error {
+  margin-top: 10px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.footer {
+  margin-top: 12px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.footerLink {
+  color: #1d4ed8;
+  font-weight: 600;
+}

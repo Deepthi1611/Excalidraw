@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import cors from "cors";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { middleware } from './middleware';
 import { getJwtSecret } from "@repo/backend-common/config";
@@ -42,6 +43,13 @@ loadDbEnvFile();
 
 const app = express();
 const port = 3000;
+
+app.use(
+  cors({
+    origin: "http://localhost:3001",
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 

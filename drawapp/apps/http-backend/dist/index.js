@@ -7,6 +7,7 @@ const node_fs_1 = __importDefault(require("node:fs"));
 const node_path_1 = __importDefault(require("node:path"));
 const express_1 = __importDefault(require("express"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const cors_1 = __importDefault(require("cors"));
 const node_crypto_1 = require("node:crypto");
 const middleware_1 = require("./middleware");
 const config_1 = require("@repo/backend-common/config");
@@ -42,6 +43,10 @@ function loadDbEnvFile() {
 loadDbEnvFile();
 const app = (0, express_1.default)();
 const port = 3000;
+app.use((0, cors_1.default)({
+    origin: "http://localhost:3001",
+    credentials: true,
+}));
 app.use(express_1.default.json());
 app.listen(port, () => {
     console.log(`app listening at http://localhost:${port}`);
