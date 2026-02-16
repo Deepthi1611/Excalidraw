@@ -4,13 +4,40 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(251, 207, 232, 0.35), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(191, 219, 254, 0.35), transparent 35%),
+    linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+}
+
+.card {
+  width: min(760px, 100%);
+  padding: 26px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+}
+
+.title {
+  font-size: 30px;
+  line-height: 1.1;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin-top: 8px;
+  color: #475569;
+  font-size: 15px;
 }
 
 .inputRow {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
-  width: min(640px, 100%);
+  margin-top: 16px;
+  width: 100%;
 }
 
 .input {
@@ -47,7 +74,39 @@
   cursor: not-allowed;
 }
 
+.authLinks {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+}
+
+.link,
+.linkSecondary {
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+.link {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.linkSecondary {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
 @media (max-width: 640px) {
+  .card {
+    padding: 18px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
   .inputRow {
     grid-template-columns: 1fr;
   }

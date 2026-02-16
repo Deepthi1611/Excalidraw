@@ -1,8 +1,12 @@
 "use client";
 
+import axios from "axios";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSocket } from "../hooks/useSocket";
 import styles from "./ChatRoomClient.module.css";
+import { getToken } from "../app/auth";
+import { backend_url } from "../app/config";
 
 export function ChatRoomClient({
   messages,
@@ -13,7 +17,33 @@ export function ChatRoomClient({
 }) {
   const [chats, setChats] = useState(messages);
   const [currentMessage, setCurrentMessage] = useState("");
-  const { socket, loading } = useSocket();
+  const [token, setToken] = useState<string | null>(null);
+  const router = useRouter();
+  const { socket, loading } = useSocket(token);
+
+  useEffect(() => {
+    const currentToken = getToken();
+    if (!currentToken) {
+      router.push("/signin");
+      return;
+    }
+    setToken(currentToken);
+  }, [router]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    axios
+      .get(`${backend_url}/chats/${roomId}`, {
+        headers: { authorization: token },
+      })
+      .then((response) => {
+        setChats(response.data);
+      })
+      .catch(() => {
+        setChats([]);
+      });
+  }, [roomId, token]);
 
   useEffect(() => {
     if (socket && !loading && socket.readyState === WebSocket.OPEN) {
