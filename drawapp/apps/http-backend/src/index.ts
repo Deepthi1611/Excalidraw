@@ -160,7 +160,7 @@ app.post('/room', middleware, async (req, res) => {
 
 // to get existing chats in a room, we will create a GET endpoint. 
 // This will be used when a user joins a room, we can fetch the existing chats and show it to the user.
-app.get("/chats/:roomId", middleware, async (req, res) => {
+app.get("/chats/:roomId", async (req, res) => {
   try {
   const roomId = req.params.roomId;
   const chats = await prisma.chat.findMany({
@@ -181,4 +181,21 @@ app.get("/chats/:roomId", middleware, async (req, res) => {
   const message = err instanceof Error ? err.message : "Internal Server Error";
   return res.status(500).json({ error: message });
 }
+});
+
+// to get room by slug, we will create a GET endpoint. 
+// This will be used when a user tries to join a room by slug, we can fetch the room details and show it to the user.
+app.get("/room/:slug", async (req, res) => {
+  try {
+    const slug = req.params.slug;
+    console.log(`Fetching room with slug: ${slug}`);
+    const room = await prisma.room.findUnique({ where: { slug } });
+    if (!room) {
+      return res.status(404).json({ error: "Room not found" });
+    }
+    return res.json({ id: room.id, slug: room.slug });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal Server Error";
+    return res.status(500).json({ error: message });
+  }
 });
