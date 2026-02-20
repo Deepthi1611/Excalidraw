@@ -4,7 +4,7 @@ import { Pencil, Users, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import { getToken } from "@/lib/auth";
+import { getCanvasEntryPath } from "@/lib/auth";
 import Image from "next/image";
 import heroCanvas from "@/assets/hero-canvas.png";
 
@@ -12,12 +12,7 @@ const Hero = () => {
   const router = useRouter();
 
   function handleStartDrawing() {
-    const token = getToken();
-    if (token) {
-      router.push("/canvas");
-      return;
-    }
-    router.push("/signin?next=%2Fcanvas");
+    router.push(getCanvasEntryPath());
   }
 
   return (
@@ -63,6 +58,7 @@ const Hero = () => {
           <Button
             variant="outline"
             size="lg"
+            onClick={() => window.open("https://github.com/Deepthi1611/Excalidraw", "_blank", "noopener,noreferrer")}
             className="text-xl px-8 py-6 rounded-xl font-extrabold transition-colors hover:!bg-orange-500 hover:!text-white hover:!border-orange-500"
           >
             <span className="font-sketch">View on GitHub</span>
