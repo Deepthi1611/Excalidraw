@@ -1,0 +1,55 @@
+@theme inline {
+  --color-background: #fdfbf7;
+  --color-foreground: #1f2937;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #1f2937;
+
+  --color-primary: #4f6ef7;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #f3efe4;
+  --color-secondary-foreground: #1f2937;
+
+  --color-muted-foreground: #667085;
+  --color-border: #dbe2ef;
+  --color-input: #dbe2ef;
+  --color-ring: #4f6ef7;
+
+  --color-sketch-blue: #4f6ef7;
+  --color-sketch-orange: #f59e0b;
+  --color-sketch-green: #16a34a;
+  --color-sketch-purple: #8b5cf6;
+  --color-canvas-grid: #e6ebf3;
+
+  --font-sketch: "Virgil", "Comic Sans MS", cursive;
+}
+
+body {
+  font-family: "Nunito", sans-serif;
+}
+
+.sketch-shadow {
+  box-shadow: 4px 4px 0 rgb(31 41 55 / 0.1);
+}
+
+.canvas-dots {
+  background-image: radial-gradient(circle, var(--color-canvas-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
