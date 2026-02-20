@@ -1,4 +1,7 @@
 import { Pencil, Users, Share2, Lock, Layers, Palette } from "lucide-react";
+import { Container } from "@/components/ui/container";
+import { FeatureCard } from "@/components/ui/feature-card";
+import { SectionIntro } from "@/components/ui/section-intro";
 
 const features = [
   {
@@ -48,31 +51,30 @@ const features = [
 const Features = () => {
   return (
     <section className="py-24 px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-extrabold mb-4">
-            Everything you need to <span className="font-sketch text-primary">sketch</span>
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-            Simple, powerful tools that get out of your way so you can focus on ideas.
-          </p>
-        </div>
+      <Container size="xl">
+        <SectionIntro
+          className="mb-16"
+          title={
+            <>
+              Everything you need to <span className="font-sketch text-primary">sketch</span>
+            </>
+          }
+          description="Simple, powerful tools that get out of your way so you can focus on ideas."
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature) => (
-            <div
+            <FeatureCard
               key={feature.title}
-              className="group p-8 rounded-4xl border border-[#d6dbe5] bg-[#f7f8fb] shadow-[0_2px_0_rgba(148,163,184,0.14)] hover:shadow-[8px_10px_0_rgba(148,163,184,0.22)] transition-[box-shadow,border-color,background-color,transform] duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:border-[#c9cfdb] hover:bg-[#f9fafc]"
-            >
-              <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-4`}>
-                <feature.icon className={`w-6 h-6 ${feature.color}`} />
-              </div>
-              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-            </div>
+              icon={feature.icon}
+              title={feature.title}
+              description={feature.description}
+              iconBgClassName={feature.bg}
+              iconColorClassName={feature.color}
+            />
           ))}
         </div>
-      </div>
+      </Container>
     </section>
   );
 };

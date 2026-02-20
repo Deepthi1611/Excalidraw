@@ -1,4 +1,5 @@
 import * as React from "react";
+import { cn } from "@/components/ui/cn";
 
 type ButtonVariant = "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
 type ButtonSize = "default" | "sm" | "lg" | "icon";
@@ -6,10 +7,6 @@ type ButtonSize = "default" | "sm" | "lg" | "icon";
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
-}
-
-function cn(...classes: Array<string | undefined | null | false>): string {
-  return classes.filter(Boolean).join(" ");
 }
 
 const baseClasses =
