@@ -1,10 +1,25 @@
+"use client";
+
 import { Pencil, Users, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
+import { getToken } from "@/lib/auth";
 import Image from "next/image";
 import heroCanvas from "@/assets/hero-canvas.png";
 
 const Hero = () => {
+  const router = useRouter();
+
+  function handleStartDrawing() {
+    const token = getToken();
+    if (token) {
+      router.push("/canvas");
+      return;
+    }
+    router.push("/signin?next=%2Fcanvas");
+  }
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center px-6 py-20 overflow-hidden canvas-dots">
       {/* Floating sketchy decorations */}
@@ -38,7 +53,11 @@ const Hero = () => {
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-          <Button size="lg" className="text-xl px-8 py-6 rounded-xl sketch-shadow font-extrabold">
+          <Button
+            size="lg"
+            onClick={handleStartDrawing}
+            className="text-xl px-8 py-6 rounded-xl sketch-shadow font-extrabold"
+          >
             <span className="font-sketch">Start Drawing</span>
           </Button>
           <Button
