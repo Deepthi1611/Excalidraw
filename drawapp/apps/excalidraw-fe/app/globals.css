@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: #ffffff;
+  --color-card-foreground: #1f2937;
+  --color-primary: #4f6ef7;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f3efe4;
+  --color-secondary-foreground: #1f2937;
+  --color-muted-foreground: #667085;
+  --color-border: #dbe2ef;
+  --color-input: #dbe2ef;
+  --color-ring: #4f6ef7;
+  --color-sketch-blue: #4f6ef7;
+  --color-sketch-orange: #f59e0b;
+  --color-sketch-green: #16a34a;
+  --color-sketch-purple: #8b5cf6;
+  --color-canvas-grid: #e6ebf3;
+
+  --font-sans: var(--font-ui);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-ui), Arial, Helvetica, sans-serif;
+}
+
+.font-sketch {
+  font-family: var(--font-sketch), "Comic Sans MS", "Marker Felt", cursive;
+}
+
+.sketch-shadow {
+  box-shadow: 4px 4px 0 rgb(31 41 55 / 0.1);
+}
+
+.canvas-dots {
+  background-image: radial-gradient(circle, var(--color-canvas-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes float {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-float {
+  animation: float 3.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: transform;
+}
