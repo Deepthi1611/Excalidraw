@@ -1,9 +1,19 @@
+"use client";
+
 import { Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { SectionIntro } from "@/components/ui/section-intro";
+import { getCanvasEntryPath } from "@/lib/auth";
 
 const Footer = () => {
+  const router = useRouter();
+
+  function handleOpenCanvas() {
+    router.push(getCanvasEntryPath());
+  }
+
   return (
     <footer className="border-t py-16 px-6">
       <Container size="xl">
@@ -11,11 +21,15 @@ const Footer = () => {
         <div className="text-center mb-16 py-12 px-6 rounded-2xl bg-primary/5 canvas-dots">
           <SectionIntro
             title="Ready to start drawing?"
-            description="No account needed. Just open and sketch."
+            description="Just open and sketch."
             titleClassName="text-3xl md:text-4xl"
             descriptionClassName="mb-8 max-w-md"
           />
-          <Button size="lg" className="text-lg px-8 py-6 rounded-xl sketch-shadow font-bold">
+          <Button
+            size="lg"
+            onClick={handleOpenCanvas}
+            className="text-lg px-8 py-6 rounded-xl sketch-shadow font-bold"
+          >
             <span className="font-sketch text-xl">Open Canvas</span>
           </Button>
         </div>
