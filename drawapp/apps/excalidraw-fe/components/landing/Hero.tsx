@@ -1,5 +1,6 @@
 import { Pencil, Users, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
 import Image from "next/image";
 import heroCanvas from "@/assets/hero-canvas.png";
 
@@ -17,7 +18,7 @@ const Hero = () => {
         <polygon points="20,4 36,36 4,36" strokeDasharray="4 3" />
       </svg>
 
-      <div className="max-w-5xl mx-auto text-center relative z-10">
+      <Container size="lg" className="text-center relative z-10">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sketch-orange/15 border border-sketch-orange/30 text-secondary-foreground text-sm font-semibold mb-8 sketch-shadow">
           <Pencil className="w-4 h-4 text-sketch-orange" />
@@ -72,7 +73,7 @@ const Hero = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent pointer-events-none" />
         </div>
-      </div>
+      </Container>
     </section>
   );
 };
