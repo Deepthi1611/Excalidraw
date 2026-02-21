@@ -18,9 +18,9 @@ export default function CanvasPage() {
   }, [router]);
 
   useEffect(() => {
-    if(canvasRef.current) {
-      initDraw(canvasRef.current);
-    }
+    if(!canvasRef.current) return;
+    const cleanup = initDraw(canvasRef.current);
+    return cleanup;
   }, []);
 
 
@@ -28,6 +28,10 @@ export default function CanvasPage() {
   return (
     <div>
       <canvas ref={canvasRef} width={2000} height={1000}></canvas>
+      {/* <div className="absolute bottom-0 right-0">
+        <button className="bg-white text-black p-2 m-2">Rectangle</button>
+        <button className="bg-white text-black p-2 m-2">Circle</button>
+      </div> */}
     </div>
   );
 }
