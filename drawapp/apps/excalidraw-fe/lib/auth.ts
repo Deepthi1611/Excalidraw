@@ -105,9 +105,11 @@ export function signOut(): void {
 
 export function getCanvasEntryPath(): string {
   try {
-    const token = getToken();
-    return token ? CANVAS_ROUTE : CANVAS_SIGNIN_ROUTE;
+    // Temporary bypass: allow opening canvas without forcing signin.
+    return CANVAS_ROUTE;
+    // const token = getToken();
+    // return token ? CANVAS_ROUTE : CANVAS_SIGNIN_ROUTE;
   } catch {
-    return CANVAS_SIGNIN_ROUTE;
+    return CANVAS_ROUTE;
   }
 }
