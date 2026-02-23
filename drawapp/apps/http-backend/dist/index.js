@@ -191,3 +191,125 @@ app.get("/room/:slug", async (req, res) => {
         return res.status(500).json({ error: message });
     }
 });
+// Fetch persisted drawing shapes for a room.
+app.get("/shapes/:roomId", async (req, res) => {
+    try {
+        const roomId = Number(req.params.roomId);
+        if (!Number.isInteger(roomId) || roomId <= 0) {
+            return res.status(400).json({ error: "Invalid roomId" });
+        }
+        const shapes = await client_1.prisma.shape.findMany({
+            where: { roomId },
+            orderBy: { createdAt: "asc" },
+        });
+        return res.json(shapes.map((shape) => ({
+            id: shape.id,
+            roomId: shape.roomId,
+            userId: shape.userId,
+            type: shape.type,
+            payload: JSON.parse(shape.payload),
+            createdAt: shape.createdAt,
+        })));
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : "Internal Server Error";
+        return res.status(500).json({ error: message });
+    }
+});
+// Persist a new drawing shape for a room.
+app.post("/shapes", middleware_1.middleware, async (req, res) => {
+    const parsedData = types_1.createShapeSchema.safeParse(req.body);
+    if (!parsedData.success) {
+        return res.status(400).json({ error: parsedData.error });
+    }
+    const userId = req.userId;
+    if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    try {
+        const shape = await client_1.prisma.shape.create({
+            data: {
+                roomId: parsedData.data.roomId,
+                userId,
+                type: parsedData.data.type,
+                payload: JSON.stringify(parsedData.data.payload),
+            },
+        });
+        return res.status(201).json({
+            id: shape.id,
+            roomId: shape.roomId,
+            userId: shape.userId,
+            type: shape.type,
+            payload: JSON.parse(shape.payload),
+            createdAt: shape.createdAt,
+        });
+    }
+    catch (err) {
+        if (err instanceof client_1.Prisma.PrismaClientKnownRequestError) {
+            if (err.code === "P2003") {
+                return res.status(400).json({ error: "Invalid roomId" });
+            }
+            return res.status(400).json({ error: `Database error: ${err.code}` });
+        }
+        const message = err instanceof Error ? err.message : "Internal Server Error";
+        return res.status(500).json({ error: message });
+    }
+});
+// Update an existing shape.
+app.patch("/shapes/:shapeId", middleware_1.middleware, async (req, res) => {
+    const shapeId = Number(req.params.shapeId);
+    if (!Number.isInteger(shapeId) || shapeId <= 0) {
+        return res.status(400).json({ error: "Invalid shapeId" });
+    }
+    const parsedData = types_1.updateShapeSchema.safeParse(req.body);
+    if (!parsedData.success) {
+        return res.status(400).json({ error: parsedData.error });
+    }
+    if (!parsedData.data.type && parsedData.data.payload === undefined) {
+        return res.status(400).json({ error: "No fields to update" });
+    }
+    try {
+        const updated = await client_1.prisma.shape.update({
+            where: { id: shapeId },
+            data: {
+                ...(parsedData.data.type ? { type: parsedData.data.type } : {}),
+                ...(parsedData.data.payload !== undefined
+                    ? { payload: JSON.stringify(parsedData.data.payload) }
+                    : {}),
+            },
+        });
+        return res.json({
+            id: updated.id,
+            roomId: updated.roomId,
+            userId: updated.userId,
+            type: updated.type,
+            payload: JSON.parse(updated.payload),
+            createdAt: updated.createdAt,
+        });
+    }
+    catch (err) {
+        if (err instanceof client_1.Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+            return res.status(404).json({ error: "Shape not found" });
+        }
+        const message = err instanceof Error ? err.message : "Internal Server Error";
+        return res.status(500).json({ error: message });
+    }
+});
+// Delete an existing shape.
+app.delete("/shapes/:shapeId", middleware_1.middleware, async (req, res) => {
+    const shapeId = Number(req.params.shapeId);
+    if (!Number.isInteger(shapeId) || shapeId <= 0) {
+        return res.status(400).json({ error: "Invalid shapeId" });
+    }
+    try {
+        await client_1.prisma.shape.delete({ where: { id: shapeId } });
+        return res.status(204).send();
+    }
+    catch (err) {
+        if (err instanceof client_1.Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+            return res.status(404).json({ error: "Shape not found" });
+        }
+        const message = err instanceof Error ? err.message : "Internal Server Error";
+        return res.status(500).json({ error: message });
+    }
+});

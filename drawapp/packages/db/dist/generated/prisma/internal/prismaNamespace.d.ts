@@ -234,6 +234,7 @@ export declare const ModelName: {
     readonly User: "User";
     readonly Room: "Room";
     readonly Chat: "Chat";
+    readonly Shape: "Shape";
 };
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
 export interface TypeMapCb<GlobalOmitOptions = {}> extends runtime.Types.Utils.Fn<{
@@ -246,7 +247,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         omit: GlobalOmitOptions;
     };
     meta: {
-        modelProps: "user" | "room" | "chat";
+        modelProps: "user" | "room" | "chat" | "shape";
         txIsolationLevel: TransactionIsolationLevel;
     };
     model: {
@@ -472,6 +473,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
                 };
             };
         };
+        Shape: {
+            payload: Prisma.$ShapePayload<ExtArgs>;
+            fields: Prisma.ShapeFieldRefs;
+            operations: {
+                findUnique: {
+                    args: Prisma.ShapeFindUniqueArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload> | null;
+                };
+                findUniqueOrThrow: {
+                    args: Prisma.ShapeFindUniqueOrThrowArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>;
+                };
+                findFirst: {
+                    args: Prisma.ShapeFindFirstArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload> | null;
+                };
+                findFirstOrThrow: {
+                    args: Prisma.ShapeFindFirstOrThrowArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>;
+                };
+                findMany: {
+                    args: Prisma.ShapeFindManyArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>[];
+                };
+                create: {
+                    args: Prisma.ShapeCreateArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>;
+                };
+                createMany: {
+                    args: Prisma.ShapeCreateManyArgs<ExtArgs>;
+                    result: BatchPayload;
+                };
+                createManyAndReturn: {
+                    args: Prisma.ShapeCreateManyAndReturnArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>[];
+                };
+                delete: {
+                    args: Prisma.ShapeDeleteArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>;
+                };
+                update: {
+                    args: Prisma.ShapeUpdateArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>;
+                };
+                deleteMany: {
+                    args: Prisma.ShapeDeleteManyArgs<ExtArgs>;
+                    result: BatchPayload;
+                };
+                updateMany: {
+                    args: Prisma.ShapeUpdateManyArgs<ExtArgs>;
+                    result: BatchPayload;
+                };
+                updateManyAndReturn: {
+                    args: Prisma.ShapeUpdateManyAndReturnArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>[];
+                };
+                upsert: {
+                    args: Prisma.ShapeUpsertArgs<ExtArgs>;
+                    result: runtime.Types.Utils.PayloadToResult<Prisma.$ShapePayload>;
+                };
+                aggregate: {
+                    args: Prisma.ShapeAggregateArgs<ExtArgs>;
+                    result: runtime.Types.Utils.Optional<Prisma.AggregateShape>;
+                };
+                groupBy: {
+                    args: Prisma.ShapeGroupByArgs<ExtArgs>;
+                    result: runtime.Types.Utils.Optional<Prisma.ShapeGroupByOutputType>[];
+                };
+                count: {
+                    args: Prisma.ShapeCountArgs<ExtArgs>;
+                    result: runtime.Types.Utils.Optional<Prisma.ShapeCountAggregateOutputType> | number;
+                };
+            };
+        };
     };
 } & {
     other: {
@@ -528,6 +603,15 @@ export declare const ChatScalarFieldEnum: {
     readonly roomId: "roomId";
 };
 export type ChatScalarFieldEnum = (typeof ChatScalarFieldEnum)[keyof typeof ChatScalarFieldEnum];
+export declare const ShapeScalarFieldEnum: {
+    readonly id: "id";
+    readonly roomId: "roomId";
+    readonly userId: "userId";
+    readonly type: "type";
+    readonly payload: "payload";
+    readonly createdAt: "createdAt";
+};
+export type ShapeScalarFieldEnum = (typeof ShapeScalarFieldEnum)[keyof typeof ShapeScalarFieldEnum];
 export declare const SortOrder: {
     readonly asc: "asc";
     readonly desc: "desc";
@@ -675,6 +759,7 @@ export type GlobalOmitConfig = {
     user?: Prisma.UserOmit;
     room?: Prisma.RoomOmit;
     chat?: Prisma.ChatOmit;
+    shape?: Prisma.ShapeOmit;
 };
 export type LogLevel = 'info' | 'query' | 'warn' | 'error';
 export type LogDefinition = {

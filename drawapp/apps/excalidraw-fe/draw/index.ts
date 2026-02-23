@@ -1,4 +1,5 @@
 import axios from "axios";
+import { HTTP_BACKEND } from "../config";
 
 type Shape = {
     type: "rectangle"
@@ -13,16 +14,19 @@ type Shape = {
     radius: number;
 } 
 
-export function initDraw(canvas: HTMLCanvasElement) {
+export async function initDraw(canvas: HTMLCanvasElement, roomId: string) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const existingShapes:Shape[] = [];
+    const existingShapes:Shape[] = await getExistingShapes(roomId);
 
     // Fill the canvas with a black background
-    ctx.fillStyle = "rgba(0, 0, 0)";
+    // ctx.fillStyle = "rgba(0, 0, 0)";
     // paints a rectangle that covers the entire canvas
-    ctx.fillRect(0,0, canvas.width, canvas.height);
+    // ctx.fillRect(0,0, canvas.width, canvas.height);
+
+    // render existing shapes on the canvas
+    clearCanvas(existingShapes, ctx, canvas);
 
     let startX = 0;
     let startY = 0;
@@ -77,8 +81,27 @@ export function clearCanvas(existingShapes: Shape[], ctx: CanvasRenderingContext
     });
 }
 
-function getExistingShapes(roomId:string) { 
-    axios.get(`/api/rooms/${roomId}/shapes`).then(response => { }).catch(error => {
-        console.error("Error fetching existing shapes:", error);
-    });
+type ShapeApiRecord = {
+    id: number;
+    roomId: number;
+    userId: string;
+    type: Shape["type"];
+    payload: Shape | string;
+    createdAt: string;
+    updatedAt: string;
+};
+
+async function getExistingShapes(roomId:string): Promise<Shape[]> { 
+    const res = await axios.get<ShapeApiRecord[]>(`${HTTP_BACKEND}/shapes/${roomId}`);
+    const records = res.data;
+
+    return records
+    .map((record) => {
+        const payload =
+        typeof record.payload === "string"
+            ? JSON.parse(record.payload)
+            : record.payload;
+        return { ...payload, type: record.type } as Shape;
+    })
+    .filter((shape): shape is Shape => shape.type === "rectangle" || shape.type === "circle");
 }

@@ -144,6 +144,17 @@ export interface PrismaClient<in LogOpts extends Prisma.LogLevel = never, in out
     get chat(): Prisma.ChatDelegate<ExtArgs, {
         omit: OmitOpts;
     }>;
+    /**
+     * `prisma.shape`: Exposes CRUD operations for the **Shape** model.
+      * Example usage:
+      * ```ts
+      * // Fetch zero or more Shapes
+      * const shapes = await prisma.shape.findMany()
+      * ```
+      */
+    get shape(): Prisma.ShapeDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
 }
 export declare function getPrismaClientClass(): PrismaClientConstructor;
 //# sourceMappingURL=class.d.ts.map

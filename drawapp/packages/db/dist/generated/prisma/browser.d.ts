@@ -17,4 +17,9 @@ export type Room = Prisma.RoomModel;
  *
  */
 export type Chat = Prisma.ChatModel;
+/**
+ * Model Shape
+ *
+ */
+export type Shape = Prisma.ShapeModel;
 //# sourceMappingURL=browser.d.ts.map
