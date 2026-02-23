@@ -1,33 +1,41 @@
 "use client";
-import {useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+
+import { useEffect, useRef } from "react";
 import { initDraw } from "@/draw";
 
-export function Canvas({roomId}:{roomId: string}) {
-    const router = useRouter();
+type CanvasProps = {
+  roomId: string;
+  socket: WebSocket | null;
+};
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export function Canvas({roomId, socket}:CanvasProps) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    // disposed = false when effect starts.
+    // Cleanup function sets disposed = true on unmount/dependency change.
+    // When async initDraw resolves:
+    // if disposed is already true, it immediately calls returned cleanup.
 
   useEffect(() => {
-    // Temporary bypass: skip signin check for canvas route.
-    // const token = getToken();
-    // if (!token) {
-    //   router.replace("/signin?next=%2Fcanvas");
-    // }
-  }, [router]);
+    if (!canvasRef.current || !socket) return;
 
-  useEffect(() => {
-    if(!canvasRef.current) return;
-    initDraw(canvasRef.current, roomId);
-  }, [canvasRef, roomId]);
+    let disposed = false;
+    let cleanup: (() => void) | void;
 
-  return (
-    <div>
-      <canvas ref={canvasRef} width={2000} height={1000}></canvas>
-      {/* <div className="absolute bottom-0 right-0">
-        <button className="bg-white text-black p-2 m-2">Rectangle</button>
-        <button className="bg-white text-black p-2 m-2">Circle</button>
-      </div> */}
-    </div>
-  );
+    void (async () => {
+      cleanup = await initDraw(canvasRef.current as HTMLCanvasElement, roomId, socket);
+      if (disposed && cleanup) cleanup();
+    })();
+
+    return () => {
+      disposed = true;
+      if (cleanup) cleanup();
+    };
+  }, [roomId, socket]);
+
+    return (
+        <div>
+           <canvas ref={canvasRef} width={2000} height={1000} />
+        </div>
+    );
 }

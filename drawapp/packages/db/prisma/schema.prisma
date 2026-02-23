@@ -45,7 +45,7 @@ model Room {
 // every chat message is sent by a user in a room
 model Chat {
   id Int @id @default(autoincrement())
-  message String // {type: rectangle, x: 10, y: 20, width: 100, height: 50}
+  message String
   userId String
   roomId Int
   room Room @relation(fields: [roomId], references: [id])

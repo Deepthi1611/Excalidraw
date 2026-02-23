@@ -36,6 +36,7 @@ function loadDbEnvFile() {
 }
 loadDbEnvFile();
 const wss = new ws_1.WebSocketServer({ port: 8080 });
+const TEMP_GUEST_USER_ID = "__guest__";
 function formatError(err) {
     if (err instanceof Error) {
         return `${err.name}: ${err.message}`;
@@ -44,6 +45,11 @@ function formatError(err) {
 }
 function checkUser(token) {
     try {
+        // TEMP BYPASS: allow websocket usage without a JWT while frontend auth is in progress.
+        // Revert this once token flow is stable.
+        if (!token) {
+            return TEMP_GUEST_USER_ID;
+        }
         const jwtSecret = (0, config_1.getJwtSecret)();
         if (!jwtSecret)
             throw new Error("JWT_SECRET is not defined");
@@ -124,13 +130,16 @@ wss.on("connection", (ws, req) => {
             }
             if (parsedData.type === "chat") {
                 const { roomId, message } = parsedData;
-                await client_1.prisma.chat.create({
-                    data: {
-                        roomId: Number(roomId),
-                        userId: currentConn.userId,
-                        message,
-                    }
-                });
+                // TEMP BYPASS: guest users are not persisted because they don't exist in User table.
+                if (currentConn.userId !== TEMP_GUEST_USER_ID) {
+                    await client_1.prisma.chat.create({
+                        data: {
+                            roomId: Number(roomId),
+                            userId: currentConn.userId,
+                            message,
+                        },
+                    });
+                }
                 // Sender must be a member of the room before sending.
                 if (!currentConn.rooms.has(roomId)) {
                     ws.send(JSON.stringify({
@@ -152,6 +161,74 @@ wss.on("connection", (ws, req) => {
                 for (const memberSocket of roomMembers) {
                     if (memberSocket.readyState === memberSocket.OPEN) {
                         memberSocket.send(payload);
+                    }
+                }
+                return;
+            }
+            if (parsedData.type === "shape") {
+                const { roomId, shape } = parsedData;
+                // Sender must join the room before drawing.
+                if (!currentConn.rooms.has(roomId)) {
+                    ws.send(JSON.stringify({
+                        type: "error",
+                        message: "Join room before sending shapes",
+                    }));
+                    return;
+                }
+                const roomIdNum = Number(roomId);
+                if (!Number.isInteger(roomIdNum) || roomIdNum <= 0) {
+                    ws.send(JSON.stringify({ type: "error", message: "Invalid roomId" }));
+                    return;
+                }
+                const payload = shape.type === "rectangle"
+                    ? {
+                        x: shape.x,
+                        y: shape.y,
+                        width: shape.width,
+                        height: shape.height,
+                    }
+                    : {
+                        centerX: shape.centerX,
+                        centerY: shape.centerY,
+                        radius: shape.radius,
+                    };
+                // TEMP BYPASS compatibility:
+                // when user is guest, associate shape with room admin so persistence still works.
+                let userIdToPersist = currentConn.userId;
+                if (userIdToPersist === TEMP_GUEST_USER_ID) {
+                    const room = await client_1.prisma.room.findUnique({
+                        where: { id: roomIdNum },
+                        select: { adminId: true },
+                    });
+                    if (!room) {
+                        ws.send(JSON.stringify({ type: "error", message: "Room not found" }));
+                        return;
+                    }
+                    userIdToPersist = room.adminId;
+                }
+                await client_1.prisma.shape.create({
+                    data: {
+                        roomId: roomIdNum,
+                        userId: userIdToPersist,
+                        type: shape.type,
+                        payload: JSON.stringify(payload),
+                    },
+                });
+                const roomMembers = membersByRoom.get(roomId);
+                if (!roomMembers)
+                    return;
+                const outgoing = JSON.stringify({
+                    type: "shape",
+                    roomId,
+                    userId: currentConn.userId,
+                    shape,
+                });
+                // Broadcast to everyone except sender to avoid local duplicate rendering.
+                for (const memberSocket of roomMembers) {
+                    if (memberSocket === ws)
+                        continue;
+                    if (memberSocket.readyState === memberSocket.OPEN) {
+                        memberSocket.send(outgoing);
                     }
                 }
             }
