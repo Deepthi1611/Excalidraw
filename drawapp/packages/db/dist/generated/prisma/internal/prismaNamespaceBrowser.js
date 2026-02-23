@@ -48,7 +48,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NullsOrder = exports.QueryMode = exports.SortOrder = exports.ChatScalarFieldEnum = exports.RoomScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.Decimal = void 0;
+exports.NullsOrder = exports.QueryMode = exports.SortOrder = exports.ShapeScalarFieldEnum = exports.ChatScalarFieldEnum = exports.RoomScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.Decimal = void 0;
 const runtime = __importStar(require("@prisma/client/runtime/index-browser"));
 exports.Decimal = runtime.Decimal;
 exports.NullTypes = {
@@ -77,7 +77,8 @@ exports.AnyNull = runtime.AnyNull;
 exports.ModelName = {
     User: 'User',
     Room: 'Room',
-    Chat: 'Chat'
+    Chat: 'Chat',
+    Shape: 'Shape'
 };
 /*
  * Enums
@@ -106,6 +107,14 @@ exports.ChatScalarFieldEnum = {
     message: 'message',
     userId: 'userId',
     roomId: 'roomId'
+};
+exports.ShapeScalarFieldEnum = {
+    id: 'id',
+    roomId: 'roomId',
+    userId: 'userId',
+    type: 'type',
+    payload: 'payload',
+    createdAt: 'createdAt'
 };
 exports.SortOrder = {
     asc: 'asc',

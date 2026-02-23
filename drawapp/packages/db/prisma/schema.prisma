@@ -28,6 +28,7 @@ model User {
   photo String?
   rooms Room[]
   chats Chat[]
+  shapes Shape[]
 }
 
 // every room can have multiple chat messages, but a chat message can only belong to one room
@@ -38,14 +39,30 @@ model Room {
   adminId String
   admin User @relation(fields: [adminId], references: [id])
   chats Chat[]
+  shapes Shape[]
 }
 
 // every chat message is sent by a user in a room
 model Chat {
   id Int @id @default(autoincrement())
-  message String
+  message String // {type: rectangle, x: 10, y: 20, width: 100, height: 50}
   userId String
   roomId Int
   room Room @relation(fields: [roomId], references: [id])
   user User @relation(fields: [userId], references: [id])
+}
+
+// shapes are drawn by users in a room, and each shape has a type and payload
+model Shape {
+  id Int @id @default(autoincrement())
+  roomId Int
+  userId String
+  type String
+  payload String
+  createdAt DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([roomId, createdAt])
 }

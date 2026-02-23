@@ -29,6 +29,7 @@ export declare const ModelName: {
     readonly User: "User";
     readonly Room: "Room";
     readonly Chat: "Chat";
+    readonly Shape: "Shape";
 };
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
 export declare const TransactionIsolationLevel: {
@@ -60,6 +61,15 @@ export declare const ChatScalarFieldEnum: {
     readonly roomId: "roomId";
 };
 export type ChatScalarFieldEnum = (typeof ChatScalarFieldEnum)[keyof typeof ChatScalarFieldEnum];
+export declare const ShapeScalarFieldEnum: {
+    readonly id: "id";
+    readonly roomId: "roomId";
+    readonly userId: "userId";
+    readonly type: "type";
+    readonly payload: "payload";
+    readonly createdAt: "createdAt";
+};
+export type ShapeScalarFieldEnum = (typeof ShapeScalarFieldEnum)[keyof typeof ShapeScalarFieldEnum];
 export declare const SortOrder: {
     readonly asc: "asc";
     readonly desc: "desc";
