@@ -135,6 +135,7 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
 
       if (parsedData.type === "join_room") {
         const { roomId } = parsedData;
+        console.log('joining room with id', roomId)
         // Join only this socket/device to the room.
         currentConn.rooms.add(roomId);
 
