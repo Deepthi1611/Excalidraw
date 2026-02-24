@@ -35,17 +35,21 @@ export async function initDraw(
   roomId: string,
   socket: WebSocket | null,
 ): Promise<(() => void) | void> {
-
+  // 1) Get the 2D drawing context and ensure we have an active socket before proceeding.
   const ctx = canvas.getContext("2d");
   if (!ctx || !socket) return;
 
+  // 2) Load already persisted shapes for this room from HTTP API and render them first.
   const existingShapes: Shape[] = await getExistingShapes(roomId);
   clearCanvas(existingShapes, ctx, canvas);
 
+  // 3) Local interaction state for the current drag session.
   let startX = 0;
   let startY = 0;
   let isDrawing = false;
 
+  // 4) Convert viewport mouse coordinates (clientX/clientY) to canvas-local coordinates
+  // by subtracting the canvas viewport offset (rect.left/top). This prevents draw offset.
   function getCanvasPoint(e: MouseEvent) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -55,6 +59,7 @@ export async function initDraw(
   }
 
   const onSocketMessage = (event: MessageEvent) => {
+    // 5) Parse incoming websocket messages; ignore malformed frames safely.
     let message: IncomingWsMessage;
     try {
       message = JSON.parse(event.data as string) as IncomingWsMessage;
@@ -75,6 +80,7 @@ export async function initDraw(
   };
 
   const onMouseDown = (e: MouseEvent) => {
+    // 6) Start a new drawing interaction and store drag origin.
     const point = getCanvasPoint(e);
     startX = point.x;
     startY = point.y;
@@ -82,6 +88,7 @@ export async function initDraw(
   };
 
   const onMouseMove = (e: MouseEvent) => {
+    // 7) While dragging, redraw current scene and paint a live preview rectangle.
     if (!isDrawing) return;
     const point = getCanvasPoint(e);
     const preview = normalizeRectangle(startX, startY, point.x, point.y);
@@ -91,19 +98,23 @@ export async function initDraw(
   };
 
   const onMouseUp = (e: MouseEvent) => {
+    // 8) Finalize drawing when mouse is released.
     if (!isDrawing) return;
     isDrawing = false;
 
     const point = getCanvasPoint(e);
     const shape = normalizeRectangle(startX, startY, point.x, point.y);
+    // Ignore accidental tiny drags/click jitter.
     if (shape.width < 2 || shape.height < 2) {
       clearCanvas(existingShapes, ctx, canvas);
       return;
     }
 
+    // 9) Add finalized shape locally and redraw immediately for responsive UI.
     existingShapes.push(shape);
     clearCanvas(existingShapes, ctx, canvas);
 
+    // 10) Publish finalized shape over websocket for realtime sync with other clients.
     if (socket.readyState === WebSocket.OPEN) {
       socket.send(
         JSON.stringify({
@@ -115,11 +126,13 @@ export async function initDraw(
     }
   };
 
+  // 11) Attach all runtime listeners for draw interactions + realtime sync.
   canvas.addEventListener("mousedown", onMouseDown);
   canvas.addEventListener("mousemove", onMouseMove);
   window.addEventListener("mouseup", onMouseUp);
   socket.addEventListener("message", onSocketMessage);
 
+  // 12) Return cleanup to prevent duplicate listeners on unmount/re-init.
   return () => {
     canvas.removeEventListener("mousedown", onMouseDown);
     canvas.removeEventListener("mousemove", onMouseMove);
