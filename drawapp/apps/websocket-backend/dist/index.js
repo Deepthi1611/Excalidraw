@@ -188,11 +188,18 @@ wss.on("connection", (ws, req) => {
                         width: shape.width,
                         height: shape.height,
                     }
-                    : {
-                        centerX: shape.centerX,
-                        centerY: shape.centerY,
-                        radius: shape.radius,
-                    };
+                    : shape.type === "circle"
+                        ? {
+                            centerX: shape.centerX,
+                            centerY: shape.centerY,
+                            radius: shape.radius,
+                        }
+                        : {
+                            x1: shape.x1,
+                            y1: shape.y1,
+                            x2: shape.x2,
+                            y2: shape.y2,
+                        };
                 // TEMP BYPASS compatibility:
                 // when user is guest, associate shape with room admin so persistence still works.
                 let userIdToPersist = currentConn.userId;
