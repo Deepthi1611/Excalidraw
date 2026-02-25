@@ -12,9 +12,18 @@ type Shape = {
   centerX: number;
   centerY: number;
   radius: number;
+} | {
+  type: "line";
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
 };
 
 type RectangleShape = Extract<Shape, { type: "rectangle" }>;
+type CircleShape = Extract<Shape, { type: "circle" }>;
+type LineShape = Extract<Shape, { type: "line" }>;
+export type DrawTool = Shape["type"];
 
 type IncomingWsMessage =
   | { type: "shape"; roomId: string; shape: Shape }
@@ -30,10 +39,33 @@ function normalizeRectangle(startX: number, startY: number, endX: number, endY: 
   };
 }
 
+function normalizeCircle(startX: number, startY: number, endX: number, endY: number): CircleShape {
+  const dx = endX - startX;
+  const dy = endY - startY;
+  return {
+    type: "circle",
+    // Use drag endpoints as a diameter so circle size matches pointer drag.
+    centerX: (startX + endX) / 2,
+    centerY: (startY + endY) / 2,
+    radius: Math.hypot(dx, dy) / 2,
+  };
+}
+
+function normalizeLine(startX: number, startY: number, endX: number, endY: number): LineShape {
+  return {
+    type: "line",
+    x1: startX,
+    y1: startY,
+    x2: endX,
+    y2: endY,
+  };
+}
+
 export async function initDraw(
   canvas: HTMLCanvasElement,
   roomId: string,
   socket: WebSocket | null,
+  selectedTool: DrawTool,
 ): Promise<(() => void) | void> {
   // 1) Get the 2D drawing context and ensure we have an active socket before proceeding.
   const ctx = canvas.getContext("2d");
@@ -88,13 +120,31 @@ export async function initDraw(
   };
 
   const onMouseMove = (e: MouseEvent) => {
-    // 7) While dragging, redraw current scene and paint a live preview rectangle.
+    // 7) While dragging, redraw current scene and paint a live preview shape.
     if (!isDrawing) return;
     const point = getCanvasPoint(e);
-    const preview = normalizeRectangle(startX, startY, point.x, point.y);
     clearCanvas(existingShapes, ctx, canvas);
     ctx.strokeStyle = "rgba(255, 255, 255, 1)";
-    ctx.strokeRect(preview.x, preview.y, preview.width, preview.height);
+
+    if (selectedTool === "rectangle") {
+      const preview = normalizeRectangle(startX, startY, point.x, point.y);
+      ctx.strokeRect(preview.x, preview.y, preview.width, preview.height);
+      return;
+    }
+
+    if (selectedTool === "circle") {
+      const preview = normalizeCircle(startX, startY, point.x, point.y);
+      ctx.beginPath();
+      ctx.arc(preview.centerX, preview.centerY, preview.radius, 0, 2 * Math.PI);
+      ctx.stroke();
+      return;
+    }
+
+    const preview = normalizeLine(startX, startY, point.x, point.y);
+    ctx.beginPath();
+    ctx.moveTo(preview.x1, preview.y1);
+    ctx.lineTo(preview.x2, preview.y2);
+    ctx.stroke();
   };
 
   const onMouseUp = (e: MouseEvent) => {
@@ -103,9 +153,22 @@ export async function initDraw(
     isDrawing = false;
 
     const point = getCanvasPoint(e);
-    const shape = normalizeRectangle(startX, startY, point.x, point.y);
+    const shape =
+      selectedTool === "rectangle"
+        ? normalizeRectangle(startX, startY, point.x, point.y)
+        : selectedTool === "circle"
+          ? normalizeCircle(startX, startY, point.x, point.y)
+          : normalizeLine(startX, startY, point.x, point.y);
+
     // Ignore accidental tiny drags/click jitter.
-    if (shape.width < 2 || shape.height < 2) {
+    const tooSmall =
+      shape.type === "rectangle"
+        ? shape.width < 2 || shape.height < 2
+        : shape.type === "circle"
+          ? shape.radius < 2
+          : Math.abs(shape.x2 - shape.x1) < 2 && Math.abs(shape.y2 - shape.y1) < 2;
+
+    if (tooSmall) {
       clearCanvas(existingShapes, ctx, canvas);
       return;
     }
@@ -141,6 +204,7 @@ export async function initDraw(
   };
 }
 
+// clear the canvas and add the existing shapes to the canvas
 export function clearCanvas(existingShapes: Shape[], ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgba(0, 0, 0, 1)";
@@ -157,6 +221,15 @@ export function clearCanvas(existingShapes: Shape[], ctx: CanvasRenderingContext
       ctx.beginPath();
       ctx.strokeStyle = "rgba(255, 255, 255, 1)";
       ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, 2 * Math.PI);
+      ctx.stroke();
+      return;
+    }
+
+    if (shape.type === "line") {
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+      ctx.moveTo(shape.x1, shape.y1);
+      ctx.lineTo(shape.x2, shape.y2);
       ctx.stroke();
     }
   });
@@ -184,7 +257,7 @@ async function getExistingShapes(roomId: string): Promise<Shape[]> {
           : record.payload;
       return { ...payload, type: record.type } as Shape;
     })
-    .filter((shape): shape is Shape => shape.type === "rectangle" || shape.type === "circle");
+    .filter((shape): shape is Shape => shape.type === "rectangle" || shape.type === "circle" || shape.type === "line");
   } catch (err) {
     console.error("Failed to fetch existing shapes:", err);
     return [];

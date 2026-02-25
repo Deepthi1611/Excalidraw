@@ -84,7 +84,8 @@ type ClientMessage =
       roomId: string;
       shape:
         | { type: "rectangle"; x: number; y: number; width: number; height: number }
-        | { type: "circle"; centerX: number; centerY: number; radius: number };
+        | { type: "circle"; centerX: number; centerY: number; radius: number }
+        | { type: "line"; x1: number; y1: number; x2: number; y2: number };
     };
 
 const connectionsBySocket = new Map<WsWebSocket, Connection>();
@@ -233,10 +234,17 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
                 width: shape.width,
                 height: shape.height,
               }
-            : {
+            : shape.type === "circle"
+              ? {
                 centerX: shape.centerX,
                 centerY: shape.centerY,
                 radius: shape.radius,
+              }
+              : {
+                x1: shape.x1,
+                y1: shape.y1,
+                x2: shape.x2,
+                y2: shape.y2,
               };
 
         // TEMP BYPASS compatibility:
