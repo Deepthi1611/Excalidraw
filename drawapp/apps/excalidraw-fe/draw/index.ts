@@ -23,7 +23,7 @@ type Shape = {
 type RectangleShape = Extract<Shape, { type: "rectangle" }>;
 type CircleShape = Extract<Shape, { type: "circle" }>;
 type LineShape = Extract<Shape, { type: "line" }>;
-export type DrawTool = Shape["type"];
+export type DrawTool = Shape["type"] | "pointer";
 
 type IncomingWsMessage =
   | { type: "shape"; roomId: string; shape: Shape }
@@ -47,6 +47,8 @@ function normalizeCircle(startX: number, startY: number, endX: number, endY: num
     // Use drag endpoints as a diameter so circle size matches pointer drag.
     centerX: (startX + endX) / 2,
     centerY: (startY + endY) / 2,
+    // Math.hypot(dx, dy) = sqrt(dx^2 + dy^2), i.e. distance between drag start/end.
+    // That distance is the diameter here, so radius is half of it.
     radius: Math.hypot(dx, dy) / 2,
   };
 }
@@ -112,6 +114,9 @@ export async function initDraw(
   };
 
   const onMouseDown = (e: MouseEvent) => {
+    // Pointer mode is selection-only; do not start drawing.
+    if (selectedTool === "pointer") return;
+
     // 6) Start a new drawing interaction and store drag origin.
     const point = getCanvasPoint(e);
     startX = point.x;
@@ -120,6 +125,8 @@ export async function initDraw(
   };
 
   const onMouseMove = (e: MouseEvent) => {
+    if (selectedTool === "pointer") return;
+
     // 7) While dragging, redraw current scene and paint a live preview shape.
     if (!isDrawing) return;
     const point = getCanvasPoint(e);
@@ -148,6 +155,11 @@ export async function initDraw(
   };
 
   const onMouseUp = (e: MouseEvent) => {
+    if (selectedTool === "pointer") {
+      isDrawing = false;
+      return;
+    }
+
     // 8) Finalize drawing when mouse is released.
     if (!isDrawing) return;
     isDrawing = false;

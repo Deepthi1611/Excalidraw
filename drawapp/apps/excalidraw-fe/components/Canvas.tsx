@@ -10,7 +10,7 @@ type CanvasProps = {
 
 export function Canvas({roomId, socket}:CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [selectedTool, setSelectedTool] = useState<DrawTool>("rectangle");
+  const [selectedTool, setSelectedTool] = useState<DrawTool>("pointer");
   const [canvasSize, setCanvasSize] = useState({ width: 1200, height: 700 });
 
   useEffect(() => {
@@ -57,6 +57,13 @@ export function Canvas({roomId, socket}:CanvasProps) {
         className="block h-screen w-screen"
       />
       <div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/95 p-2 shadow-lg">
+        <button
+          className={`rounded-lg px-3 py-1.5 text-sm ${selectedTool === "pointer" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-100 hover:bg-slate-700"}`}
+          onClick={() => setSelectedTool("pointer")}
+          type="button"
+        >
+          Pointer
+        </button>
         <button
           className={`rounded-lg px-3 py-1.5 text-sm ${selectedTool === "rectangle" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-100 hover:bg-slate-700"}`}
           onClick={() => setSelectedTool("rectangle")}
