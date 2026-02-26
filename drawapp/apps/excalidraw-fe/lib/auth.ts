@@ -2,8 +2,8 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_HTTP_BACKEND_URL?.trim() || "http://localhost:3000";
 
 const TOKEN_KEY = "auth_token";
-const CANVAS_ROUTE = "/canvas";
-const CANVAS_SIGNIN_ROUTE = "/signin?next=%2Fcanvas";
+const CANVAS_ROUTE = "/dashboard";
+const CANVAS_SIGNIN_ROUTE = "/signin?next=%2Fdashboard";
 
 type SignInPayload = {
   email: string;
@@ -105,11 +105,9 @@ export function signOut(): void {
 
 export function getCanvasEntryPath(): string {
   try {
-    // Temporary bypass: allow opening canvas without forcing signin.
-    return CANVAS_ROUTE;
-    // const token = getToken();
-    // return token ? CANVAS_ROUTE : CANVAS_SIGNIN_ROUTE;
+    const token = getToken();
+    return token ? CANVAS_ROUTE : CANVAS_SIGNIN_ROUTE;
   } catch {
-    return CANVAS_ROUTE;
+    return CANVAS_SIGNIN_ROUTE;
   }
 }

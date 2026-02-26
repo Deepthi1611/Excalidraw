@@ -3,6 +3,7 @@ import {useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WS_URL } from "@/config";
 import { Canvas } from "./Canvas";
+import { getToken } from "@/lib/auth";
 
 export function RoomCanvas({roomId}:{roomId: string}) {
     const router = useRouter();
@@ -10,6 +11,11 @@ export function RoomCanvas({roomId}:{roomId: string}) {
   const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      return;
+    }
+
     const ws = new WebSocket(`${WS_URL}`);
     ws.onopen = () => {
       console.log("WebSocket connection established");
@@ -24,12 +30,11 @@ export function RoomCanvas({roomId}:{roomId: string}) {
   }, [roomId]);
 
   useEffect(() => {
-    // Temporary bypass: skip signin check for canvas route.
-    // const token = getToken();
-    // if (!token) {
-    //   router.replace("/signin?next=%2Fcanvas");
-    // }
-  }, [router]);
+    const token = getToken();
+    if (!token) {
+      router.replace(`/signin?next=${encodeURIComponent(`/canvas/${roomId}`)}`);
+    }
+  }, [roomId, router]);
 
   // if(!socket) {
   //   return <div>Connecting to web socket...</div>;

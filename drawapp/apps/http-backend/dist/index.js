@@ -149,6 +149,24 @@ app.post('/room', middleware_1.middleware, async (req, res) => {
         return res.status(500).json({ error: message });
     }
 });
+// List all rooms for dashboard browsing.
+app.get("/rooms", middleware_1.middleware, async (_req, res) => {
+    try {
+        const rooms = await client_1.prisma.room.findMany({
+            orderBy: { createdAt: "desc" },
+            select: {
+                id: true,
+                slug: true,
+                createdAt: true,
+            },
+        });
+        return res.json(rooms);
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : "Internal Server Error";
+        return res.status(500).json({ error: message });
+    }
+});
 // to get existing chats in a room, we will create a GET endpoint. 
 // This will be used when a user joins a room, we can fetch the existing chats and show it to the user.
 app.get("/chats/:roomId", async (req, res) => {
