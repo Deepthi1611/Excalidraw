@@ -30,6 +30,7 @@ export function Canvas({roomId, socket}:CanvasProps) {
   });
   // It is a ref that stores a function - stores resolve function from promise
   const textResolverRef = useRef<((value: string | null) => void) | null>(null);
+  const [isCanvasBootstrapping, setIsCanvasBootstrapping] = useState(true);
 
   function handleToolChange(tool: DrawTool) {
     // Keep ref in sync immediately so canvas handlers read latest tool in the same tick.
@@ -121,6 +122,7 @@ export function Canvas({roomId, socket}:CanvasProps) {
 
     let disposed = false;
     let cleanup: (() => void) | void;
+    setIsCanvasBootstrapping(true);
 
     void (async () => {
       cleanup = await initDraw(
@@ -132,6 +134,11 @@ export function Canvas({roomId, socket}:CanvasProps) {
         textFontSizeRef,
         requestTextInput,
       );
+      // the same useEffect run that started initDraw is still the active one for this component.
+      if (!disposed) {
+        setIsCanvasBootstrapping(false);
+      }
+      // deps changed or component unmounted
       if (disposed && cleanup) cleanup();
     })();
 
@@ -148,6 +155,9 @@ export function Canvas({roomId, socket}:CanvasProps) {
         width={canvasSize.width}
         height={canvasSize.height}
         className="block h-screen w-screen"
+      />
+      <div
+        className={`absolute inset-0 z-10 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 transition-opacity duration-300 ${isCanvasBootstrapping ? "animate-pulse opacity-100" : "pointer-events-none opacity-0"}`}
       />
       {textEditor.isOpen ? (
         <textarea
