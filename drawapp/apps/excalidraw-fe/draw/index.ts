@@ -31,6 +31,7 @@ type RectangleShape = Extract<Shape, { type: "rectangle" }>;
 type CircleShape = Extract<Shape, { type: "circle" }>;
 type LineShape = Extract<Shape, { type: "line" }>;
 export type DrawTool = Shape["type"] | "pointer" | "eraser";
+type ToolRef = { current: DrawTool };
 
 type IncomingWsMessage =
   // Server broadcasts created shapes (with DB id). clientId may be echoed back for reconciliation.
@@ -140,7 +141,7 @@ export async function initDraw(
   canvas: HTMLCanvasElement,
   roomId: string,
   socket: WebSocket | null,
-  selectedTool: DrawTool,
+  selectedToolRef: ToolRef,
 ): Promise<(() => void) | void> {
   // 1) Get the 2D drawing context and ensure we have an active socket before proceeding.
   const ctx = canvas.getContext("2d");
@@ -229,6 +230,8 @@ export async function initDraw(
   };
 
   const onMouseDown = (e: MouseEvent) => {
+    const selectedTool = selectedToolRef.current;
+
     // Pointer mode is selection-only; do not start drawing.
     if (selectedTool === "pointer") return;
 
@@ -264,6 +267,7 @@ export async function initDraw(
   };
 
   const onMouseMove = (e: MouseEvent) => {
+    const selectedTool = selectedToolRef.current;
     if (selectedTool === "pointer" || selectedTool === "eraser") return;
 
     // 7) While dragging, redraw current scene and paint a live preview shape.
@@ -294,6 +298,7 @@ export async function initDraw(
   };
 
   const onMouseUp = (e: MouseEvent) => {
+    const selectedTool = selectedToolRef.current;
     if (selectedTool === "pointer" || selectedTool === "eraser") {
       isDrawing = false;
       return;
