@@ -18,6 +18,13 @@ type Shape = {
   y1: number;
   x2: number;
   y2: number;
+} | {
+  type: "text";
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  fontSize: number;
 };
 
 type CanvasShape = Shape & {
@@ -30,8 +37,12 @@ type CanvasShape = Shape & {
 type RectangleShape = Extract<Shape, { type: "rectangle" }>;
 type CircleShape = Extract<Shape, { type: "circle" }>;
 type LineShape = Extract<Shape, { type: "line" }>;
+type TextShape = Extract<Shape, { type: "text" }>;
 export type DrawTool = Shape["type"] | "pointer" | "eraser";
 type ToolRef = { current: DrawTool };
+type ColorRef = { current: string };
+type FontSizeRef = { current: number };
+type RequestTextInput = (x: number, y: number, color: string, fontSize: number) => Promise<string | null>;
 
 type IncomingWsMessage =
   // Server broadcasts created shapes (with DB id). clientId may be echoed back for reconciliation.
@@ -96,6 +107,24 @@ function isPointInsideShape(shape: CanvasShape, x: number, y: number): boolean {
     return Math.hypot(x - shape.centerX, y - shape.centerY) <= shape.radius;
   }
 
+  if (shape.type === "text") {
+    // Approximate text bounds for erasing (supports multi-line text).
+    const lines = shape.text.split("\n");
+    const longestLineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
+    // estimated width is calculated as - characters × font size × average width factor
+    const estimatedWidth = Math.max(8, longestLineLength * shape.fontSize * 0.6);
+    // fontSize × line spacing
+    const estimatedHeight = Math.max(shape.fontSize, lines.length * shape.fontSize * 1.2);
+    // Text is rendered with baseline "top", so bounds extend downward from y.
+    // This checks if the click lies inside the estimated rectangle.
+    return (
+      x >= shape.x &&
+      x <= shape.x + estimatedWidth &&
+      y >= shape.y &&
+      y <= shape.y + estimatedHeight
+    );
+  }
+
   // Line hit-test: treat pointer as "on line" if it's within 6px of the segment.
   // We use a tolerance because a perfect 1px geometric hit is too hard for users.
   return getPointToSegmentDistance(x, y, shape.x1, shape.y1, shape.x2, shape.y2) <= 6;
@@ -142,6 +171,9 @@ export async function initDraw(
   roomId: string,
   socket: WebSocket | null,
   selectedToolRef: ToolRef,
+  textColorRef: ColorRef,
+  textFontSizeRef: FontSizeRef,
+  requestTextInput: RequestTextInput,
 ): Promise<(() => void) | void> {
   // 1) Get the 2D drawing context and ensure we have an active socket before proceeding.
   const ctx = canvas.getContext("2d");
@@ -230,12 +262,49 @@ export async function initDraw(
   };
 
   const onMouseDown = (e: MouseEvent) => {
+    void (async () => {
     const selectedTool = selectedToolRef.current;
 
     // Pointer mode is selection-only; do not start drawing.
     if (selectedTool === "pointer") return;
 
     const point = getCanvasPoint(e);
+    if (selectedTool === "text") {
+      const typedText = await requestTextInput(point.x, point.y, textColorRef.current, textFontSizeRef.current);
+      const safeText = typedText?.trim();
+      if (!safeText) return;
+      // Read current refs at save time so latest toolbar selections persist.
+      const selectedColor = textColorRef.current;
+      const selectedFontSize = textFontSizeRef.current;
+
+      const baseShape: TextShape = {
+        type: "text",
+        x: point.x,
+        y: point.y,
+        text: safeText,
+        color: selectedColor,
+        fontSize: selectedFontSize,
+      };
+
+      const clientId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const shape: CanvasShape = { ...baseShape, clientId };
+
+      existingShapes.push(shape);
+      clearCanvas(existingShapes, ctx, canvas);
+
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(
+          JSON.stringify({
+            type: "shape",
+            roomId,
+            clientId,
+            shape: baseShape,
+          }),
+        );
+      }
+      return;
+    }
+
     if (selectedTool === "eraser") {
       // Overlap handling: scan from end (top-most rendered shape) and erase first match.
       for (let i = existingShapes.length - 1; i >= 0; i -= 1) {
@@ -264,11 +333,12 @@ export async function initDraw(
     startX = point.x;
     startY = point.y;
     isDrawing = true;
+    })();
   };
 
   const onMouseMove = (e: MouseEvent) => {
     const selectedTool = selectedToolRef.current;
-    if (selectedTool === "pointer" || selectedTool === "eraser") return;
+    if (selectedTool === "pointer" || selectedTool === "eraser" || selectedTool === "text") return;
 
     // 7) While dragging, redraw current scene and paint a live preview shape.
     if (!isDrawing) return;
@@ -299,7 +369,7 @@ export async function initDraw(
 
   const onMouseUp = (e: MouseEvent) => {
     const selectedTool = selectedToolRef.current;
-    if (selectedTool === "pointer" || selectedTool === "eraser") {
+    if (selectedTool === "pointer" || selectedTool === "eraser" || selectedTool === "text") {
       isDrawing = false;
       return;
     }
@@ -326,7 +396,9 @@ export async function initDraw(
         ? shape.width < 2 || shape.height < 2
         : shape.type === "circle"
           ? shape.radius < 2
-          : Math.abs(shape.x2 - shape.x1) < 2 && Math.abs(shape.y2 - shape.y1) < 2;
+          : shape.type === "line"
+            ? Math.abs(shape.x2 - shape.x1) < 2 && Math.abs(shape.y2 - shape.y1) < 2
+            : false;
 
     if (tooSmall) {
       clearCanvas(existingShapes, ctx, canvas);
@@ -393,6 +465,18 @@ export function clearCanvas(existingShapes: CanvasShape[], ctx: CanvasRenderingC
       ctx.moveTo(shape.x1, shape.y1);
       ctx.lineTo(shape.x2, shape.y2);
       ctx.stroke();
+      return;
+    }
+
+    if (shape.type === "text") {
+      ctx.fillStyle = shape.color;
+      ctx.font = `${shape.fontSize}px sans-serif`;
+      // Use top baseline so rendered text starts exactly from stored (x, y).
+      ctx.textBaseline = "top";
+      const lines = shape.text.split("\n");
+      lines.forEach((line, index) => {
+        ctx.fillText(line, shape.x, shape.y + index * shape.fontSize * 1.2);
+      });
     }
   });
 }
@@ -421,7 +505,7 @@ async function getExistingShapes(roomId: string): Promise<CanvasShape[]> {
     })
     .filter(
       (shape): shape is CanvasShape =>
-        shape.type === "rectangle" || shape.type === "circle" || shape.type === "line",
+        shape.type === "rectangle" || shape.type === "circle" || shape.type === "line" || shape.type === "text",
     );
   } catch (err) {
     console.error("Failed to fetch existing shapes:", err);
