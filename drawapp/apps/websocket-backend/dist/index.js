@@ -36,7 +36,6 @@ function loadDbEnvFile() {
 }
 loadDbEnvFile();
 const wss = new ws_1.WebSocketServer({ port: 8080 });
-const TEMP_GUEST_USER_ID = "__guest__";
 function formatError(err) {
     if (err instanceof Error) {
         return `${err.name}: ${err.message}`;
@@ -45,11 +44,8 @@ function formatError(err) {
 }
 function checkUser(token) {
     try {
-        // TEMP BYPASS: allow websocket usage without a JWT while frontend auth is in progress.
-        // Revert this once token flow is stable.
-        if (!token) {
-            return TEMP_GUEST_USER_ID;
-        }
+        if (!token)
+            return null;
         const jwtSecret = (0, config_1.getJwtSecret)();
         if (!jwtSecret)
             throw new Error("JWT_SECRET is not defined");
@@ -131,16 +127,13 @@ wss.on("connection", (ws, req) => {
             }
             if (parsedData.type === "chat") {
                 const { roomId, message } = parsedData;
-                // TEMP BYPASS: guest users are not persisted because they don't exist in User table.
-                if (currentConn.userId !== TEMP_GUEST_USER_ID) {
-                    await client_1.prisma.chat.create({
-                        data: {
-                            roomId: Number(roomId),
-                            userId: currentConn.userId,
-                            message,
-                        },
-                    });
-                }
+                await client_1.prisma.chat.create({
+                    data: {
+                        roomId: Number(roomId),
+                        userId: currentConn.userId,
+                        message,
+                    },
+                });
                 // Sender must be a member of the room before sending.
                 if (!currentConn.rooms.has(roomId)) {
                     ws.send(JSON.stringify({
@@ -200,26 +193,12 @@ wss.on("connection", (ws, req) => {
                             x2: shape.x2,
                             y2: shape.y2,
                         };
-                // TEMP BYPASS compatibility:
-                // when user is guest, associate shape with room admin so persistence still works.
-                let userIdToPersist = currentConn.userId;
-                if (userIdToPersist === TEMP_GUEST_USER_ID) {
-                    const room = await client_1.prisma.room.findUnique({
-                        where: { id: roomIdNum },
-                        select: { adminId: true },
-                    });
-                    if (!room) {
-                        ws.send(JSON.stringify({ type: "error", message: "Room not found" }));
-                        return;
-                    }
-                    userIdToPersist = room.adminId;
-                }
                 let createdShape;
                 try {
                     createdShape = await client_1.prisma.shape.create({
                         data: {
                             roomId: roomIdNum,
-                            userId: userIdToPersist,
+                            userId: currentConn.userId,
                             type: shape.type,
                             payload: JSON.stringify(payload),
                         },
