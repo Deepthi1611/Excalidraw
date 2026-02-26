@@ -79,9 +79,9 @@ type ClientMessage =
       roomId: string;
       clientId?: string;
       shape:
-        | { type: "rectangle"; x: number; y: number; width: number; height: number }
-        | { type: "circle"; centerX: number; centerY: number; radius: number }
-        | { type: "line"; x1: number; y1: number; x2: number; y2: number }
+        | { type: "rectangle"; x: number; y: number; width: number; height: number; color: string }
+        | { type: "circle"; centerX: number; centerY: number; radius: number; color: string }
+        | { type: "line"; x1: number; y1: number; x2: number; y2: number; color: string }
         | { type: "text"; x: number; y: number; text: string; color: string; fontSize: number };
     }
   | { type: "delete_shape"; roomId: string; shapeId: number };
@@ -228,12 +228,14 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
                 y: shape.y,
                 width: shape.width,
                 height: shape.height,
+                color: shape.color,
               }
             : shape.type === "circle"
               ? {
                 centerX: shape.centerX,
                 centerY: shape.centerY,
                 radius: shape.radius,
+                color: shape.color,
               }
               : shape.type === "line"
                 ? {
@@ -241,6 +243,7 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
                   y1: shape.y1,
                   x2: shape.x2,
                   y2: shape.y2,
+                  color: shape.color,
                 }
                 : {
                   x: shape.x,

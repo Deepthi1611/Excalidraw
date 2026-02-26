@@ -7,17 +7,20 @@ type Shape = {
   y: number;
   width: number;
   height: number;
+  color: string;
 } | {
   type: "circle";
   centerX: number;
   centerY: number;
   radius: number;
+  color: string;
 } | {
   type: "line";
   x1: number;
   y1: number;
   x2: number;
   y2: number;
+  color: string;
 } | {
   type: "text";
   x: number;
@@ -132,17 +135,18 @@ function isPointInsideShape(shape: CanvasShape, x: number, y: number): boolean {
 
 // Normalize drag input so the shape always has a consistent origin and positive dimensions,
 // regardless of draw direction.
-function normalizeRectangle(startX: number, startY: number, endX: number, endY: number): RectangleShape {
+function normalizeRectangle(startX: number, startY: number, endX: number, endY: number, color: string): RectangleShape {
   return {
     type: "rectangle",
     x: Math.min(startX, endX),
     y: Math.min(startY, endY),
     width: Math.abs(endX - startX),
     height: Math.abs(endY - startY),
+    color,
   };
 }
 
-function normalizeCircle(startX: number, startY: number, endX: number, endY: number): CircleShape {
+function normalizeCircle(startX: number, startY: number, endX: number, endY: number, color: string): CircleShape {
   const dx = endX - startX;
   const dy = endY - startY;
   return {
@@ -153,16 +157,18 @@ function normalizeCircle(startX: number, startY: number, endX: number, endY: num
     // Math.hypot(dx, dy) = sqrt(dx^2 + dy^2), i.e. distance between drag start/end.
     // That distance is the diameter here, so radius is half of it.
     radius: Math.hypot(dx, dy) / 2,
+    color,
   };
 }
 
-function normalizeLine(startX: number, startY: number, endX: number, endY: number): LineShape {
+function normalizeLine(startX: number, startY: number, endX: number, endY: number, color: string): LineShape {
   return {
     type: "line",
     x1: startX,
     y1: startY,
     x2: endX,
     y2: endY,
+    color,
   };
 }
 
@@ -207,7 +213,8 @@ export async function initDraw(
       return;
     }
 
-    // Apply live shape updates from other clients, but only for this room.
+    // Apply live shape updates from other clients, but only for this room
+    // broadcasting live shape updates to other clients of same room
     if (message.type === "shape" && message.roomId === roomId) {
       // Step 1: check if this shape is the server echo of "my own" optimistic shape.
       // We identify that using clientId (temporary id generated on FE before DB insert).
@@ -246,6 +253,7 @@ export async function initDraw(
       return;
     }
 
+    // backend broadcasts delete operation to all users in the room 
     if (message.type === "delete_shape" && message.roomId === roomId) {
       // Keep canvas state consistent with server delete broadcasts.
       const deleteIndex = existingShapes.findIndex((shape) => shape.id === message.shapeId);
@@ -344,23 +352,24 @@ export async function initDraw(
     if (!isDrawing) return;
     const point = getCanvasPoint(e);
     clearCanvas(existingShapes, ctx, canvas);
-    ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+    const currentColor = textColorRef.current;
+    ctx.strokeStyle = currentColor;
 
     if (selectedTool === "rectangle") {
-      const preview = normalizeRectangle(startX, startY, point.x, point.y);
+      const preview = normalizeRectangle(startX, startY, point.x, point.y, currentColor);
       ctx.strokeRect(preview.x, preview.y, preview.width, preview.height);
       return;
     }
 
     if (selectedTool === "circle") {
-      const preview = normalizeCircle(startX, startY, point.x, point.y);
+      const preview = normalizeCircle(startX, startY, point.x, point.y, currentColor);
       ctx.beginPath();
       ctx.arc(preview.centerX, preview.centerY, preview.radius, 0, 2 * Math.PI);
       ctx.stroke();
       return;
     }
 
-    const preview = normalizeLine(startX, startY, point.x, point.y);
+    const preview = normalizeLine(startX, startY, point.x, point.y, currentColor);
     ctx.beginPath();
     ctx.moveTo(preview.x1, preview.y1);
     ctx.lineTo(preview.x2, preview.y2);
@@ -379,12 +388,13 @@ export async function initDraw(
     isDrawing = false;
 
     const point = getCanvasPoint(e);
+    const currentColor = textColorRef.current;
     const baseShape: Shape =
       selectedTool === "rectangle"
-        ? normalizeRectangle(startX, startY, point.x, point.y)
+        ? normalizeRectangle(startX, startY, point.x, point.y, currentColor)
         : selectedTool === "circle"
-          ? normalizeCircle(startX, startY, point.x, point.y)
-          : normalizeLine(startX, startY, point.x, point.y);
+          ? normalizeCircle(startX, startY, point.x, point.y, currentColor)
+          : normalizeLine(startX, startY, point.x, point.y, currentColor);
 
     const clientId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     // Optimistic local shape includes clientId so later server echo can replace it with persisted id.
@@ -446,14 +456,14 @@ export function clearCanvas(existingShapes: CanvasShape[], ctx: CanvasRenderingC
 
   existingShapes.forEach((shape) => {
     if (shape.type === "rectangle") {
-      ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+      ctx.strokeStyle = shape.color ?? "rgba(255, 255, 255, 1)";
       ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
       return;
     }
 
     if (shape.type === "circle") {
       ctx.beginPath();
-      ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+      ctx.strokeStyle = shape.color ?? "rgba(255, 255, 255, 1)";
       ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, 2 * Math.PI);
       ctx.stroke();
       return;
@@ -461,7 +471,7 @@ export function clearCanvas(existingShapes: CanvasShape[], ctx: CanvasRenderingC
 
     if (shape.type === "line") {
       ctx.beginPath();
-      ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+      ctx.strokeStyle = shape.color ?? "rgba(255, 255, 255, 1)";
       ctx.moveTo(shape.x1, shape.y1);
       ctx.lineTo(shape.x2, shape.y2);
       ctx.stroke();
@@ -501,7 +511,10 @@ async function getExistingShapes(roomId: string): Promise<CanvasShape[]> {
         typeof record.payload === "string"
           ? JSON.parse(record.payload)
           : record.payload;
-      return { ...payload, id: record.id, type: record.type } as CanvasShape;
+      const withDefaults = record.type === "text"
+        ? payload
+        : { color: "#ffffff", ...payload };
+      return { ...withDefaults, id: record.id, type: record.type } as CanvasShape;
     })
     .filter(
       (shape): shape is CanvasShape =>
