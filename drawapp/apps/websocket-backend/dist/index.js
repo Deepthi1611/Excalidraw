@@ -180,12 +180,14 @@ wss.on("connection", (ws, req) => {
                         y: shape.y,
                         width: shape.width,
                         height: shape.height,
+                        color: shape.color,
                     }
                     : shape.type === "circle"
                         ? {
                             centerX: shape.centerX,
                             centerY: shape.centerY,
                             radius: shape.radius,
+                            color: shape.color,
                         }
                         : shape.type === "line"
                             ? {
@@ -193,6 +195,7 @@ wss.on("connection", (ws, req) => {
                                 y1: shape.y1,
                                 x2: shape.x2,
                                 y2: shape.y2,
+                                color: shape.color,
                             }
                             : {
                                 x: shape.x,

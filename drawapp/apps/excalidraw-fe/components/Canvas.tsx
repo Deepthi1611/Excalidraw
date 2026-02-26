@@ -226,14 +226,13 @@ export function Canvas({roomId, socket}:CanvasProps) {
         >
           Text
         </button>
-        <label className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs ${selectedTool === "text" ? "bg-slate-800 text-slate-200" : "bg-slate-800/60 text-slate-400"}`}>
-          Text Color
+        <label className="flex items-center gap-2 rounded-lg bg-slate-800 px-2 py-1.5 text-xs text-slate-200">
+          Color
           <input
             type="color"
             value={textColor}
             onChange={(e) => handleTextColorChange(e.target.value)}
-            disabled={selectedTool !== "text"}
-            className="h-5 w-6 cursor-pointer rounded border border-slate-600 bg-transparent p-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-5 w-6 cursor-pointer rounded border border-slate-600 bg-transparent p-0"
           />
         </label>
         <label className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs ${selectedTool === "text" ? "bg-slate-800 text-slate-200" : "bg-slate-800/60 text-slate-400"}`}>
