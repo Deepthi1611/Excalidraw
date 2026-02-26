@@ -187,12 +187,20 @@ wss.on("connection", (ws, req) => {
                             centerY: shape.centerY,
                             radius: shape.radius,
                         }
-                        : {
-                            x1: shape.x1,
-                            y1: shape.y1,
-                            x2: shape.x2,
-                            y2: shape.y2,
-                        };
+                        : shape.type === "line"
+                            ? {
+                                x1: shape.x1,
+                                y1: shape.y1,
+                                x2: shape.x2,
+                                y2: shape.y2,
+                            }
+                            : {
+                                x: shape.x,
+                                y: shape.y,
+                                text: shape.text,
+                                color: shape.color,
+                                fontSize: shape.fontSize,
+                            };
                 let createdShape;
                 try {
                     createdShape = await client_1.prisma.shape.create({
