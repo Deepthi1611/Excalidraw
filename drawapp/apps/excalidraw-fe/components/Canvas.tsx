@@ -32,6 +32,14 @@ export function Canvas({roomId, socket}:CanvasProps) {
     // if disposed is already true, it immediately calls returned cleanup.
 
   useEffect(() => {
+    if (!canvasRef.current) return;
+    const eraserCursor =
+      'url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23ffffff%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M20 20H7L3 16a2.8 2.8 0 0 1 0-4L13 2a2.8 2.8 0 0 1 4 0l4 4a2.8 2.8 0 0 1 0 4L11 20%27/%3E%3Cpath d=%27m14 7 3 3%27/%3E%3C/svg%3E") 3 20, auto';
+    canvasRef.current.style.cursor =
+      selectedTool === "eraser" ? eraserCursor : selectedTool === "pointer" ? "default" : "crosshair";
+  }, [selectedTool]);
+
+  useEffect(() => {
     if (!canvasRef.current || !socket) return;
 
     let disposed = false;
@@ -63,6 +71,13 @@ export function Canvas({roomId, socket}:CanvasProps) {
           type="button"
         >
           Pointer
+        </button>
+        <button
+          className={`rounded-lg px-3 py-1.5 text-sm ${selectedTool === "eraser" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-100 hover:bg-slate-700"}`}
+          onClick={() => setSelectedTool("eraser")}
+          type="button"
+        >
+          Eraser
         </button>
         <button
           className={`rounded-lg px-3 py-1.5 text-sm ${selectedTool === "rectangle" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-100 hover:bg-slate-700"}`}
