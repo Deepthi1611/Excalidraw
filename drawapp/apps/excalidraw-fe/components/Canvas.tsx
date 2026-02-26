@@ -226,21 +226,23 @@ export function Canvas({roomId, socket}:CanvasProps) {
         >
           Text
         </button>
-        <label className="flex items-center gap-2 rounded-lg bg-slate-800 px-2 py-1.5 text-xs text-slate-200">
-          Color
+        <label className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs ${selectedTool === "text" ? "bg-slate-800 text-slate-200" : "bg-slate-800/60 text-slate-400"}`}>
+          Text Color
           <input
             type="color"
             value={textColor}
             onChange={(e) => handleTextColorChange(e.target.value)}
-            className="h-5 w-6 cursor-pointer rounded border border-slate-600 bg-transparent p-0"
+            disabled={selectedTool !== "text"}
+            className="h-5 w-6 cursor-pointer rounded border border-slate-600 bg-transparent p-0 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </label>
-        <label className="flex items-center gap-2 rounded-lg bg-slate-800 px-2 py-1.5 text-xs text-slate-200">
-          Size
+        <label className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs ${selectedTool === "text" ? "bg-slate-800 text-slate-200" : "bg-slate-800/60 text-slate-400"}`}>
+          Text Size
           <select
             value={textFontSize}
             onChange={(e) => handleTextFontSizeChange(Number(e.target.value))}
-            className="rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-xs text-slate-100 outline-none"
+            disabled={selectedTool !== "text"}
+            className="rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-xs text-slate-100 outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value={12}>12</option>
             <option value={14}>14</option>
