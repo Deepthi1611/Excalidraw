@@ -82,11 +82,13 @@ type ClientMessage =
   | {
       type: "shape";
       roomId: string;
+      clientId?: string;
       shape:
         | { type: "rectangle"; x: number; y: number; width: number; height: number }
         | { type: "circle"; centerX: number; centerY: number; radius: number }
         | { type: "line"; x1: number; y1: number; x2: number; y2: number };
-    };
+    }
+  | { type: "delete_shape"; roomId: string; shapeId: number };
 
 const connectionsBySocket = new Map<WsWebSocket, Connection>();
 // Helps track all active sockets for a user (same user on multiple devices/tabs).
@@ -207,7 +209,7 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
       }
 
       if (parsedData.type === "shape") {
-        const { roomId, shape } = parsedData;
+        const { roomId, shape, clientId } = parsedData;
 
         // Sender must join the room before drawing.
         if (!currentConn.rooms.has(roomId)) {
@@ -262,14 +264,20 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
           userIdToPersist = room.adminId;
         }
 
-        await prisma.shape.create({
-          data: {
-            roomId: roomIdNum,
-            userId: userIdToPersist,
-            type: shape.type,
-            payload: JSON.stringify(payload),
-          },
-        });
+        let createdShape;
+        try {
+          createdShape = await prisma.shape.create({
+            data: {
+              roomId: roomIdNum,
+              userId: userIdToPersist,
+              type: shape.type,
+              payload: JSON.stringify(payload),
+            },
+          });
+        } catch (err) {
+          ws.send(JSON.stringify({ type: "error", message: `Failed to save shape: ${formatError(err)}` }));
+          return;
+        }
 
         const roomMembers = membersByRoom.get(roomId);
         if (!roomMembers) return;
@@ -278,12 +286,59 @@ wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
           type: "shape",
           roomId,
           userId: currentConn.userId,
-          shape,
+          clientId,
+          shape: {
+            id: createdShape.id,
+            type: shape.type,
+            ...payload,
+          },
         });
 
-        // Broadcast to everyone except sender to avoid local duplicate rendering.
+        // Broadcast to everyone (including sender) so sender can reconcile local preview with DB id.
         for (const memberSocket of roomMembers) {
-          if (memberSocket === ws) continue;
+          if (memberSocket.readyState === memberSocket.OPEN) {
+            memberSocket.send(outgoing);
+          }
+        }
+        return;
+      }
+
+      if (parsedData.type === "delete_shape") {
+        const { roomId, shapeId } = parsedData;
+
+        // Sender must join the room before erasing.
+        if (!currentConn.rooms.has(roomId)) {
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: "Join room before deleting shapes",
+            }),
+          );
+          return;
+        }
+
+        if (!Number.isInteger(shapeId) || shapeId <= 0) {
+          ws.send(JSON.stringify({ type: "error", message: "Invalid shapeId" }));
+          return;
+        }
+
+        try {
+          await prisma.shape.delete({ where: { id: shapeId } });
+        } catch (err) {
+          ws.send(JSON.stringify({ type: "error", message: `Failed to delete shape: ${formatError(err)}` }));
+          return;
+        }
+
+        const roomMembers = membersByRoom.get(roomId);
+        if (!roomMembers) return;
+
+        const outgoing = JSON.stringify({
+          type: "delete_shape",
+          roomId,
+          shapeId,
+        });
+
+        for (const memberSocket of roomMembers) {
           if (memberSocket.readyState === memberSocket.OPEN) {
             memberSocket.send(outgoing);
           }
