@@ -11,7 +11,12 @@ type CanvasProps = {
 export function Canvas({roomId, socket}:CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedTool, setSelectedTool] = useState<DrawTool>("pointer");
+  const selectedToolRef = useRef<DrawTool>("pointer");
   const [canvasSize, setCanvasSize] = useState({ width: 1200, height: 700 });
+
+  useEffect(() => {
+    selectedToolRef.current = selectedTool;
+  }, [selectedTool]);
 
   useEffect(() => {
     function updateCanvasSize() {
@@ -25,6 +30,7 @@ export function Canvas({roomId, socket}:CanvasProps) {
     window.addEventListener("resize", updateCanvasSize);
     return () => window.removeEventListener("resize", updateCanvasSize);
   }, []);
+  
 
     // disposed = false when effect starts.
     // Cleanup function sets disposed = true on unmount/dependency change.
@@ -46,7 +52,7 @@ export function Canvas({roomId, socket}:CanvasProps) {
     let cleanup: (() => void) | void;
 
     void (async () => {
-      cleanup = await initDraw(canvasRef.current as HTMLCanvasElement, roomId, socket, selectedTool);
+      cleanup = await initDraw(canvasRef.current as HTMLCanvasElement, roomId, socket, selectedToolRef);
       if (disposed && cleanup) cleanup();
     })();
 
@@ -54,7 +60,7 @@ export function Canvas({roomId, socket}:CanvasProps) {
       disposed = true;
       if (cleanup) cleanup();
     };
-  }, [roomId, socket, selectedTool, canvasSize.width, canvasSize.height]);
+  }, [roomId, socket, canvasSize.width, canvasSize.height]);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#f6f6f7]">
