@@ -48,22 +48,30 @@ function getPointToSegmentDistance(
   x2: number,
   y2: number,
 ): number {
+    // to get the direction of the vector/line
   // Segment direction vector from (x1, y1) -> (x2, y2).
   const dx = x2 - x1;
   const dy = y2 - y1;
 
+//   to get the length of the line so that we'll know if the point is placed beside the line or not
   // Squared segment length (avoids an early sqrt and is enough for projection math).
   const lengthSquared = dx * dx + dy * dy;
 
   // Degenerate case: segment has no length (start == end), so distance is point-to-point.
+//   if lengthSquared is 0 then it is not a line, it is actually a dot
+// Math.hypot(px - x1, py - y1) means sqrt(a^2 + b^2)
   if (lengthSquared === 0) return Math.hypot(px - x1, py - y1);
 
+//   Imagine the line is AB - starting point is A and ending point is B
   // Project point P onto the infinite line through the segment.
   // t is the normalized projection position:
-  // t < 0   => before segment start
-  // t > 1   => after segment end
-  // 0..1    => inside segment bounds
-  // Clamp t to [0, 1] so we get the nearest point on the finite segment.
+  // t < 0   => before segment start - before A
+//   t = 0 => exactly at A
+// t = 1 => exactly at B
+  // t > 1   => after segment end - after B
+  // 0..1    => inside segment bounds - somewhere on the line
+  // Clamp t to [0, 1] so we get the nearest point on the finite segment but not the entire infinite line
+//   We drop a perpendicular shadow from the cursor onto the line.
   const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSquared));
 
   // Coordinates of the closest point on the segment to (px, py).
@@ -81,6 +89,8 @@ function isPointInsideShape(shape: CanvasShape, x: number, y: number): boolean {
   }
 
   if (shape.type === "circle") {
+    // We measure distance from click → center of circle.
+    // If that distance is less than the radius → inside.
     // Circle hit-test: distance from pointer to center must be <= radius.
     return Math.hypot(x - shape.centerX, y - shape.centerY) <= shape.radius;
   }
@@ -90,6 +100,8 @@ function isPointInsideShape(shape: CanvasShape, x: number, y: number): boolean {
   return getPointToSegmentDistance(x, y, shape.x1, shape.y1, shape.x2, shape.y2) <= 6;
 }
 
+// Normalize drag input so the shape always has a consistent origin and positive dimensions,
+// regardless of draw direction.
 function normalizeRectangle(startX: number, startY: number, endX: number, endY: number): RectangleShape {
   return {
     type: "rectangle",
